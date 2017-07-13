@@ -10,6 +10,8 @@ button, input {
 #main {
     max-width: 600px;
     margin: 0 auto; 
+    padding: 2em;
+    background-color: #DFEFF0;
 }
 
 #sample-text {
