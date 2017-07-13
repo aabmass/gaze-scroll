@@ -3,6 +3,10 @@
   margin: 0 auto; 
 }
 
+#sample-text {
+    margin-top: 5em;
+}
+
 .controls {
     margin: 1em;
 }
