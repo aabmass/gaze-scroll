@@ -1,6 +1,15 @@
+body {
+    font-size: large;
+    font-family: 'Bellefair', serif;
+}
+
+button, input {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
 #main {
-  max-width: 600px;
-  margin: 0 auto; 
+    max-width: 600px;
+    margin: 0 auto; 
 }
 
 #sample-text {
