@@ -27,7 +27,7 @@
   // some other static calculations
   var scrollBorderWidth = 0.10;
   var scrollPercent = 0.30;
-  var scrollDurationMs = 800;
+  var scrollDurationMs = 500;
   var xScrollOffset = width * scrollPercent;
   var yScrollOffset = height * scrollPercent;
 
@@ -67,7 +67,7 @@
    * a queue and keeping the average. The queue stores just the contributions
    * i.e. the weight of each measurement in the contribution
    */
-  var numToAverage = 10;
+  var numToAverage = 20;
   var valuesQueue = [];
   var xPrediction = 0;
   var yPrediction = 0;
@@ -104,9 +104,6 @@
     // x and y relative coordinates (scaled 0.0 to 1.0), being top left
     var xRel = 1 - (width - xPrediction) / width;
     var yRel = 1 - (height - yPrediction) / height;
-
-    console.log("Collected " + valuesQueue.length + " averages and continuing");
-    console.log("(" + xRel + ", " + yRel + ")");
 
     var xScroll = 0;
     var yScroll = 0;
