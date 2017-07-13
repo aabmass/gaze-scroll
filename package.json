@@ -1,0 +1,22 @@
+{
+  "name": "eye-scrolling",
+  "version": "0.0.1",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "http-server -S -C cert-dev.pem -K key-dev.pem"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aabmass/gaze-scroll.git"
+  },
+  "author": "Aaron Abbott",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aabmass/gaze-scroll/issues"
+  },
+  "homepage": "https://github.com/aabmass/gaze-scroll#readme",
+  "devDependencies": {
+    "http-server": "^0.10.0"
+  }
+}

@@ -1,0 +1,12 @@
+#main {
+  max-width: 600px;
+  margin: 0 auto; 
+}
+
+.controls {
+    margin: 1em;
+}
+
+.controls button {
+    margin-right: 0.25em;
+}
