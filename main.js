@@ -1,8 +1,12 @@
 (function(window) {
   // start tracking and calibrating immediately
   webgazer
-    .begin()
-    .showPredictionPoints(true);
+    .setRegression('ridge')
+    .setTracker('clmtrackr')
+    .begin();
+
+  console.log(webgazer.getRegression());
+  console.log(webgazer.getTracker());
 
   // screen dimensions for calculations
   var width = window.innerWidth
@@ -21,9 +25,9 @@
   }
 
   // some other static calculations
-  var scrollBorderWidth = 0.08;
-  var scrollPercent = 0.15;
-  var scrollDurationMs = 400;
+  var scrollBorderWidth = 0.10;
+  var scrollPercent = 0.30;
+  var scrollDurationMs = 500;
   var xScrollOffset = width * scrollPercent;
   var yScrollOffset = height * scrollPercent;
 
@@ -59,16 +63,47 @@
 
   /**
    * The gaze listener, checks if you are looking in a border and scrolls for
-   * you.
+   * you. Also, takes a moving average of the data, storing measurements in
+   * a queue and keeping the average. The queue stores just the contributions
+   * i.e. the weight of each measurement in the contribution
    */
+  var numToAverage = 20;
+  var valuesQueue = [];
+  var xPrediction = 0;
+  var yPrediction = 0;
+
   var scrollGazeListener = function(data, elapsedTime) {
     if (data == null) {
       return;
     }
+    // values queue doesn't have enough values yet
+    else if (valuesQueue.length < numToAverage) {
+      var curXContrib = data.x / numToAverage;
+      var curYContrib = data.y / numToAverage;
 
+      xPrediction += curXContrib;
+      yPrediction += curYContrib;
+      valuesQueue.push([curXContrib, curYContrib]);
+      return;
+    }
+
+    /** Update the moving average */
+    // remove the oldest measurement
+    var oldest = valuesQueue.shift();
+    xPrediction -= oldest[0];
+    yPrediction -= oldest[1];
+
+    // add in the new, current measurement
+    var curXContrib = data.x / numToAverage;
+    var curYContrib = data.y / numToAverage;
+    xPrediction += curXContrib;
+    yPrediction += curYContrib;
+    valuesQueue.push([curXContrib, curYContrib]);
+
+    /** do the computations for the current average */
     // x and y relative coordinates (scaled 0.0 to 1.0), being top left
-    var xRel = 1 - (width - data.x) / width;
-    var yRel = 1 - (height - data.y) / height;
+    var xRel = 1 - (width - xPrediction) / width;
+    var yRel = 1 - (height - yPrediction) / height;
 
     var xScroll = 0;
     var yScroll = 0;
@@ -86,12 +121,12 @@
     if (yRel <= scrollBorderWidth) {
       yScroll = -yScrollOffset;
     }
-    // looking near the right border
+    // looking near the bottom border
     else if (yRel >= 1 - scrollBorderWidth) {
       yScroll = yScrollOffset;
     }
 
-    // finally cause the window to scroll
+    // do the actual window scroll
     if (xScroll || yScroll) {
       scrollBySmooth(xScroll, yScroll, scrollDurationMs);
     }
