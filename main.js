@@ -13,10 +13,17 @@
     || document.documentElement.clientHeight
     || document.body.clientHeight;
 
+  // the checkbox whether or not to save
+  // if data was previously saved, keep it checked
+  var saveDataCheckbox = document.getElementById('save-data');
+  if (window.localStorage.getItem('webgazerGlobalData')) {
+    saveDataCheckbox.checked = true;
+  }
+
   // some other static calculations
-  var scrollBorderWidth = 0.15;
-  var scrollPercent = 0.05;
-  var scrollDurationMs = 200;
+  var scrollBorderWidth = 0.08;
+  var scrollPercent = 0.15;
+  var scrollDurationMs = 400;
   var xScrollOffset = width * scrollPercent;
   var yScrollOffset = height * scrollPercent;
 
@@ -34,6 +41,20 @@
   });
   document.getElementById('stop-scrolling').addEventListener('click', function(e) {
     webgazer.clearGazeListener();
+  });
+
+  /**
+   * Save the model on exit. See https://webgazer.cs.brown.edu/#usage
+   */
+  window.addEventListener("beforeunload", function (e) {
+    // this saves regression data to localStorage
+    if (saveDataCheckbox.checked) {
+      webgazer.end();
+      console.log('Saving data model to localStorage');
+    }
+    else {
+      window.localStorage.clear();
+    }
   });
 
   /**
