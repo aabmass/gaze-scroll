@@ -34,8 +34,8 @@
   var saveDataInput = document.getElementById('save-data');
 
   // set initial input variable vals
-  scrollMarginPercentInput.value = scrollMarginPercent;
-  scrollPercentInput.value = scrollPercent;
+  scrollMarginPercentInput.value = scrollMarginPercent * 100;
+  scrollPercentInput.value = scrollPercent * 100;
   scrollDurationInput.value = scrollDuration;
   numToAverageInput.value = numToAverage;
 
@@ -48,19 +48,27 @@
    * Callbacks for the UI
    */
   scrollMarginPercentInput.addEventListener('change', function(e) {
-    scrollMarginPercent = e.target.value;
+    if (!isNaN(e.target.value)) {
+      scrollMarginPercent = e.target.value / 100;
+    }
   });
   scrollPercentInput.addEventListener('change', function(e) {
-    scrollPercent = e.target.value;
+    if (!isNaN(e.target.value)) {
+      scrollPercent = e.target.value / 100;
+    }
   });
   scrollDurationInput.addEventListener('change', function(e) {
-    scrollDuration = e.target.value;
+    if (!isNaN(e.target.value)) {
+      scrollDuration = e.target.value;
+    }
   });
   numToAverageInput.addEventListener('change', function(e) {
-    numToAverage = e.target.value;
-    valuesQueue = []
-    xPrediction = 0;
-    yPrediction = 0;
+    if (!isNaN(e.target.value)) {
+      numToAverage = e.target.value;
+      valuesQueue = []
+      xPrediction = 0;
+      yPrediction = 0;
+    }
   });
   document.getElementById('show-predictions').addEventListener('click', function(e) {
     webgazer.showPredictionPoints(true);
