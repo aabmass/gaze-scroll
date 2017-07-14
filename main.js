@@ -9,13 +9,16 @@
     || document.documentElement.clientHeight
     || document.body.clientHeight;
 
-  // number of values to moving average for reducing noise
-  var numToAverage = 5;
+  // number of values to moving average for reducing noise, and associated vars
+  var numToAverage = 12;
+  var valuesQueue = [];
+  var xPrediction = 0;
+  var yPrediction = 0;
 
   // some other static calculations
-  var scrollMarginPercent = 0.10;
+  var scrollMarginPercent = 0.17;
   var scrollPercent = 0.30;
-  var scrollDurationMs = 500;
+  var scrollDuration = 1000;
   var xScrollOffset = function() {
     return width * scrollPercent;
   };
@@ -27,10 +30,15 @@
   var scrollMarginPercentInput = document.getElementById('scroll-margin-perc');
   var scrollPercentInput = document.getElementById('scroll-perc');
   var scrollDurationInput = document.getElementById('scroll-duration');
-  var numberToAverageInput = document.getElementById('number-avg');
+  var numToAverageInput = document.getElementById('number-avg');
   var saveDataInput = document.getElementById('save-data');
 
-  // the checkbox whether or not to save
+  // set initial input variable vals
+  scrollMarginPercentInput.value = scrollMarginPercent;
+  scrollPercentInput.value = scrollPercent;
+  scrollDurationInput.value = scrollDuration;
+  numToAverageInput.value = numToAverage;
+
   // if data was previously saved, keep it checked
   if (window.localStorage.getItem('webgazerGlobalData')) {
     saveDataInput.checked = true;
@@ -39,6 +47,21 @@
   /**
    * Callbacks for the UI
    */
+  scrollMarginPercentInput.addEventListener('change', function(e) {
+    scrollMarginPercent = e.target.value;
+  });
+  scrollPercentInput.addEventListener('change', function(e) {
+    scrollPercent = e.target.value;
+  });
+  scrollDurationInput.addEventListener('change', function(e) {
+    scrollDuration = e.target.value;
+  });
+  numToAverageInput.addEventListener('change', function(e) {
+    numToAverage = e.target.value;
+    valuesQueue = []
+    xPrediction = 0;
+    yPrediction = 0;
+  });
   document.getElementById('show-predictions').addEventListener('click', function(e) {
     webgazer.showPredictionPoints(true);
   });
@@ -72,10 +95,6 @@
    * a queue and keeping the average. The queue stores just the contributions
    * i.e. the weight of each measurement in the contribution
    */
-  var valuesQueue = [];
-  var xPrediction = 0;
-  var yPrediction = 0;
-
   var scrollGazeListener = function(data, elapsedTime) {
     if (data == null) {
       return;
@@ -132,7 +151,7 @@
 
     // do the actual window scroll
     if (xScroll || yScroll) {
-      scrollBySmooth(xScroll, yScroll, scrollDurationMs);
+      scrollBySmooth(xScroll, yScroll, scrollDuration);
     }
   };
 
