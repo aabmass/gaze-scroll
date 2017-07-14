@@ -1,12 +1,4 @@
 (function(window) {
-  // start tracking and calibrating immediately
-  webgazer
-    .setRegression('ridge')
-    .setTracker('clmtrackr')
-    .begin();
-
-  console.log(webgazer.getRegression());
-  console.log(webgazer.getTracker());
 
   // screen dimensions for calculations
   var width = window.innerWidth
@@ -17,22 +9,35 @@
     || document.documentElement.clientHeight
     || document.body.clientHeight;
 
-  // the checkbox whether or not to save
-  // if data was previously saved, keep it checked
-  var saveDataCheckbox = document.getElementById('save-data');
-  if (window.localStorage.getItem('webgazerGlobalData')) {
-    saveDataCheckbox.checked = true;
-  }
+  // number of values to moving average for reducing noise
+  var numToAverage = 5;
 
   // some other static calculations
-  var scrollBorderWidth = 0.10;
+  var scrollMarginPercent = 0.10;
   var scrollPercent = 0.30;
   var scrollDurationMs = 500;
-  var xScrollOffset = width * scrollPercent;
-  var yScrollOffset = height * scrollPercent;
+  var xScrollOffset = function() {
+    return width * scrollPercent;
+  };
+  var yScrollOffset = function() {
+    return height * scrollPercent;
+  };
+
+  // ui vars
+  var scrollMarginPercentInput = document.getElementById('scroll-margin-perc');
+  var scrollPercentInput = document.getElementById('scroll-perc');
+  var scrollDurationInput = document.getElementById('scroll-duration');
+  var numberToAverageInput = document.getElementById('number-avg');
+  var saveDataInput = document.getElementById('save-data');
+
+  // the checkbox whether or not to save
+  // if data was previously saved, keep it checked
+  if (window.localStorage.getItem('webgazerGlobalData')) {
+    saveDataInput.checked = true;
+  }
 
   /**
-   * Button callbacks for the UI
+   * Callbacks for the UI
    */
   document.getElementById('show-predictions').addEventListener('click', function(e) {
     webgazer.showPredictionPoints(true);
@@ -52,7 +57,7 @@
    */
   window.addEventListener("beforeunload", function (e) {
     // this saves regression data to localStorage
-    if (saveDataCheckbox.checked) {
+    if (saveDataInput.checked) {
       webgazer.end();
       console.log('Saving data model to localStorage');
     }
@@ -67,7 +72,6 @@
    * a queue and keeping the average. The queue stores just the contributions
    * i.e. the weight of each measurement in the contribution
    */
-  var numToAverage = 20;
   var valuesQueue = [];
   var xPrediction = 0;
   var yPrediction = 0;
@@ -109,21 +113,21 @@
     var yScroll = 0;
 
     // looking near the left border
-    if (xRel <= scrollBorderWidth) {
-      xScroll = -xScrollOffset;
+    if (xRel <= scrollMarginPercent) {
+      xScroll = -xScrollOffset();
     }
     // looking near the right border
-    else if (xRel >= 1 - scrollBorderWidth) {
-      xScroll = xScrollOffset;
+    else if (xRel >= 1 - scrollMarginPercent) {
+      xScroll = xScrollOffset();
     }
 
     // looking near the top border
-    if (yRel <= scrollBorderWidth) {
-      yScroll = -yScrollOffset;
+    if (yRel <= scrollMarginPercent) {
+      yScroll = -yScrollOffset();
     }
     // looking near the bottom border
-    else if (yRel >= 1 - scrollBorderWidth) {
-      yScroll = yScrollOffset;
+    else if (yRel >= 1 - scrollMarginPercent) {
+      yScroll = yScrollOffset();
     }
 
     // do the actual window scroll
@@ -171,5 +175,14 @@
 
     window.requestAnimationFrame(animate);
   };
-              
+
+  // start tracking and calibrating immediately
+  webgazer
+    .setRegression('ridge')
+    .setTracker('clmtrackr')
+    .begin();
+
+  console.log(webgazer.getRegression());
+  console.log(webgazer.getTracker());
+
 }(window));

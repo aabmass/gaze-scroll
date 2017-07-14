@@ -22,6 +22,10 @@ button, input {
     margin: 1em;
 }
 
-.controls button {
+.controls button, input {
     margin-right: 0.25em;
+}
+
+.controls input {
+    display: block;
 }
