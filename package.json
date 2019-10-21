@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/aabmass/gaze-scroll#readme",
   "devDependencies": {
-    "http-server": "^0.10.0"
+    "http-server": "^0.11.1"
   }
 }
