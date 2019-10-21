@@ -1,6 +1,6 @@
 /** WebGazer.js: Scalable Webcam EyeTracking Using User Interactions 
  * 
- * Copyright (c) 2016, Brown HCI Group 
+ * Copyright (c) 2016-2019, Brown HCI Group 
 
 * Licensed under GPLv3. Companies with a valuation of less than $10M can use WebGazer.js under LGPLv3. 
 */
@@ -4728,7 +4728,7 @@ var pModel = {
 
 var clm = {
 	tracker : function(params) {
-		
+
 		if (!params) params = {};
 		if (params.constantVelocity === undefined) params.constantVelocity = true;
 		if (params.searchWindow === undefined) params.searchWindow = 11;
@@ -4737,30 +4737,30 @@ var clm = {
 		if (params.stopOnConvergence === undefined) params.stopOnConvergence = false;
 		if (params.weightPoints === undefined) params.weightPoints = undefined;
 		if (params.sharpenResponse === undefined) params.sharpenResponse = false;
-		
+
 		var numPatches, patchSize, numParameters, patchType;
 		var gaussianPD;
 		var eigenVectors, eigenValues;
 		var sketchCC, sketchW, sketchH, sketchCanvas;
 		var candidate;
 		var weights, model, biases;
-		
+
 		var sobelInit = false;
 		var lbpInit = false;
-		
+
 		var currentParameters = [];
 		var currentPositions = [];
 		var previousParameters = [];
 		var previousPositions = [];
-		
+
 		var patches = [];
 		var responses = [];
 		var meanShape = [];
-		
+
 		var responseMode = 'single';
 		var responseList = ['raw'];
 		var responseIndex = 0;
-		
+
 		/*
 		It's possible to experiment with the sequence of variances used for the finding the maximum in the KDE.
 		This sequence is pretty arbitrary, but was found to be okay using some manual testing.
@@ -4769,21 +4769,21 @@ var clm = {
 		//var varianceSeq = [3,1.5,0.75];
 		//var varianceSeq = [6,3,0.75];
 		var PDMVariance = 0.7;
-		
+
 		var relaxation = 0.1;
-		
+
 		var first = true;
-		
+
 		var convergenceLimit = 0.01;
-		
+
 		var learningRate = [];
 		var stepParameter = 1.25;
 		var prevCostFunc = []
-		
+
 		var searchWindow;
 		var modelWidth, modelHeight;
 		var halfSearchWindow, vecProbs, responsePixels;
-		
+
 		if(typeof Float64Array !== 'undefined') {
 			var updatePosition = new Float64Array(2);
 			var vecpos = new Float64Array(2);
@@ -4792,9 +4792,9 @@ var clm = {
 			var vecpos = new Array(2);
 		}
 		var pw, pl, pdataLength;
-		
+
 		var facecheck_count = 0;
-		
+
 		var webglFi, svmFi, mosseCalc;
 
 		var scoringCanvas = document.createElement('canvas');
@@ -4812,20 +4812,20 @@ var clm = {
 		var nose_position = [0.0,0.0];
 		var lep, rep, mep;
 		var runnerTimeout, runnerElement, runnerBox;
-		
+
 		var pointWeights;
 
 		var halfPI = Math.PI/2;
-		
+
 		/*
 		 *	load model data, initialize filters, etc.
 		 *
 		 *	@param	<Object>	pdm model object
 		 */
 		this.init = function(pdmmodel) {
-			
+
 			model = pdmmodel;
-			
+
 			// load from model
 			patchType = model.patchModel.patchType;
 			numPatches = model.patchModel.numPatches;
@@ -4838,14 +4838,14 @@ var clm = {
 			numParameters = model.shapeModel.numEvalues;
 			modelWidth = model.patchModel.canvasSize[0];
 			modelHeight = model.patchModel.canvasSize[1];
-			
+
 			// set up canvas to work on
 			sketchCanvas = document.createElement('canvas');
 			sketchCC = sketchCanvas.getContext('2d');
 
 			sketchW = sketchCanvas.width = modelWidth + (searchWindow-1) + patchSize-1;
 			sketchH = sketchCanvas.height = modelHeight + (searchWindow-1) + patchSize-1;
-			
+
 			if (model.hints && mosseFilter && left_eye_filter && right_eye_filter && nose_filter) {
 				//var mossef_lefteye = new mosseFilter({drawResponse : document.getElementById('overlay2')});
 				mossef_lefteye = new mosseFilter();
@@ -4867,7 +4867,7 @@ var clm = {
 					eigenVectors[i][j] = model.shapeModel.eigenVectors[i][j];
 				}
 			}
-			
+
 			// load mean shape
 			for (var i = 0; i < numPatches;i++) {
 				meanShape[i] = [model.shapeModel.meanShape[i][0], model.shapeModel.meanShape[i][1]];
@@ -4884,7 +4884,7 @@ var clm = {
 			}
 			msmodelwidth = msxmax-msxmin;
 			msmodelheight = msymax-msymin;
-			
+
 			// get scoringweights if they exist
 			if (model.scoring) {
 				scoringWeights = new Float64Array(model.scoring.coef);
@@ -4892,13 +4892,13 @@ var clm = {
 				scoringCanvas.width = model.scoring.size[0];
 				scoringCanvas.height = model.scoring.size[1];
 			}
-			
+
 			// load eigenvalues
 			eigenValues = model.shapeModel.eigenValues;
-			
+
 			weights = model.patchModel.weights;
 			biases = model.patchModel.bias;
-			
+
 			// precalculate gaussianPriorDiagonal
 			gaussianPD = numeric.rep([numParameters+4, numParameters+4],0);
 			// set values and append manual inverse
@@ -4909,11 +4909,11 @@ var clm = {
 					gaussianPD[i+4][i+4] = 1/eigenValues[i];
 				}
 			}
-			
+
 			for (var i = 0;i < numParameters+4;i++) {
 				currentParameters[i] = 0;
 			}
-			
+
 			if (patchType == "SVM") {
 				var webGLContext;
 				var webGLTestCanvas = document.createElement('canvas');
@@ -4922,15 +4922,15 @@ var clm = {
 					if (!webGLContext || !webGLContext.getExtension('OES_texture_float')) {
 						webGLContext = null;
 					}
-				} 
-				
+				}
+
 				if (webGLContext && params.useWebGL && (typeof(webglFilter) !== "undefined")) {
 					webglFi = new webglFilter();
 					try {
 						webglFi.init(weights, biases, numPatches, searchWindow+patchSize-1, searchWindow+patchSize-1, patchSize, patchSize);
 						if ('lbp' in weights) lbpInit = true;
 						if ('sobel' in weights) sobelInit = true;
-					} 
+					}
 					catch(err) {
 						alert("There was a problem setting up webGL programs, falling back to slightly slower javascript version. :(");
 						webglFi = undefined;
@@ -4948,7 +4948,7 @@ var clm = {
 				mosseCalc = new mosseFilterResponses();
 				mosseCalc.init(weights, numPatches, patchSize, patchSize);
 			}
-			
+
 			if (patchType == "SVM") {
 				pw = pl = patchSize+searchWindow-1;
 			} else {
@@ -4968,14 +4968,14 @@ var clm = {
 					patches[i] = new Array(pdataLength);
 				}
 			}
-			
+
 			for (var i = 0;i < numPatches;i++) {
 				learningRate[i] = 1.0;
 				prevCostFunc[i] = 0.0;
 			}
 
 			if (params.weightPoints) {
-				// weighting of points 
+				// weighting of points
 				pointWeights = [];
 				for (var i = 0;i < numPatches;i++) {
 					if (i in params.weightPoints) {
@@ -4989,7 +4989,7 @@ var clm = {
 				pointWeights = numeric.diag(pointWeights);
 			}
 		}
-		
+
 		/*
 		 *	starts the tracker to run on a regular interval
 		 */
@@ -5021,11 +5021,11 @@ var clm = {
 		 *  TODO: should be able to take img element as well
 		 */
 		this.track = function(element, box) {
-			
+
 			var scaling, translateX, translateY, rotation;
 			var croppedPatches = [];
 			var ptch, px, py;
-						
+
 			if (first) {
 				// do viola-jones on canvas to get initial guess, if we don't have any points
 				var gi = getInitialPosition(element, box);
@@ -5034,18 +5034,18 @@ var clm = {
 					var evt = document.createEvent("Event");
 					evt.initEvent("clmtrackrNotFound", true, true);
 					document.dispatchEvent(evt)
-					
+
 					return false;
 				}
 				scaling = gi[0];
 				rotation = gi[1];
 				translateX = gi[2];
 				translateY = gi[3];
-				
+
 				first = false;
 			} else {
 				facecheck_count += 1;
-				
+
 				if (params.constantVelocity) {
 					// calculate where to get patches via constant velocity prediction
 					if (previousParameters.length >= 2) {
@@ -5055,7 +5055,7 @@ var clm = {
 						}
 					}
 				}
-				
+
 				// change translation, rotation and scale parameters
 				rotation = halfPI - Math.atan((currentParameters[0]+1)/currentParameters[1]);
 				if (rotation > halfPI) {
@@ -5065,23 +5065,23 @@ var clm = {
 				translateX = currentParameters[2];
 				translateY = currentParameters[3];
 			}
-			
+
 			// copy canvas to a new dirty canvas
 			sketchCC.save();
-			
+
 			// clear canvas
 			sketchCC.clearRect(0, 0, sketchW, sketchH);
-			
+
 			sketchCC.scale(1/scaling, 1/scaling);
 			sketchCC.rotate(-rotation);
 			sketchCC.translate(-translateX, -translateY);
-			
+
 			sketchCC.drawImage(element, 0, 0, element.width, element.height);
-			
+
 			sketchCC.restore();
 			//	get cropped images around new points based on model parameters (not scaled and translated)
 			var patchPositions = calculatePositions(currentParameters, false);
-			
+
 			// check whether tracking is ok
 			if (scoringWeights && (facecheck_count % 10 == 0)) {
 				if (!checkTracking()) {
@@ -5092,12 +5092,12 @@ var clm = {
 						currentParameters[i] = 0;
 						previousParameters = [];
 					}
-					
+
 					// send event to signal that tracking was lost
 					var evt = document.createEvent("Event");
 					evt.initEvent("clmtrackrLost", true, true);
 					document.dispatchEvent(evt)
-					
+
 					return false;
 				}
 			}
@@ -5109,7 +5109,7 @@ var clm = {
 				py = patchPositions[i][1]-(pl/2);
 				ptch = sketchCC.getImageData(Math.round(px), Math.round(py), pw, pl);
 				pdata = ptch.data;
-				
+
 				// convert to grayscale
 				pmatrix = patches[i];
 				for (var j = 0;j < pdataLength;j++) {
@@ -5117,7 +5117,7 @@ var clm = {
 					pmatrix[j] = grayscaleColor;
 				}
 			}
-			
+
 			/*print weights*/
 			/*sketchCC.clearRect(0, 0, sketchW, sketchH);
 			var nuWeights;
@@ -5125,7 +5125,7 @@ var clm = {
 				nuWeights = weights[i].map(function(x) {return x*2000+127;});
 				drawData(sketchCC, nuWeights, patchSize, patchSize, false, patchPositions[i][0]-(patchSize/2), patchPositions[i][1]-(patchSize/2));
 			}*/
-			
+
 			// print patches
 			/*sketchCC.clearRect(0, 0, sketchW, sketchH);
 			for (var i = 0;i < numPatches;i++) {
@@ -5158,47 +5158,47 @@ var clm = {
 			/*sketchCC.clearRect(0, 0, sketchW, sketchH);
 			var nuWeights;
 			for (var i = 0;i < numPatches;i++) {
-		
+
 				nuWeights = [];
 				for (var j = 0;j < responses[i].length;j++) {
 					nuWeights.push(responses[i][j]*255);
 				}
-				
+
 				//if ([27,32,44,50].indexOf(i) > -1) {
 				//	drawData(sketchCC, nuWeights, searchWindow, searchWindow, false, patchPositions[i][0]-((searchWindow-1)/2), patchPositions[i][1]-((searchWindow-1)/2));
 				//}
 				drawData(sketchCC, nuWeights, searchWindow, searchWindow, false, patchPositions[i][0]-((searchWindow-1)/2), patchPositions[i][1]-((searchWindow-1)/2));
 			}*/
-			
+
 			// iterate until convergence or max 10, 20 iterations?:
 			var originalPositions = currentPositions;
 			var jac;
 			var meanshiftVectors = [];
-			
+
 			for (var i = 0; i < varianceSeq.length; i++) {
-				
+
 				// calculate jacobian
 				jac = createJacobian(currentParameters, eigenVectors);
 
 				// for debugging
 				//var debugMVs = [];
 				//
-				
+
 				var opj0, opj1;
-				
+
 				for (var j = 0;j < numPatches;j++) {
 					opj0 = originalPositions[j][0]-((searchWindow-1)*scaling/2);
 					opj1 = originalPositions[j][1]-((searchWindow-1)*scaling/2);
-					
+
 					// calculate PI x gaussians
 					var vpsum = gpopt(searchWindow, currentPositions[j], updatePosition, vecProbs, responses, opj0, opj1, j, varianceSeq[i], scaling);
-					
+
 					// calculate meanshift-vector
 					gpopt2(searchWindow, vecpos, updatePosition, vecProbs, vpsum, opj0, opj1, scaling);
-					
+
 					// for debugging
 					//var debugMatrixMV = gpopt2(searchWindow, vecpos, updatePosition, vecProbs, vpsum, opj0, opj1);
-					
+
 					// evaluate here whether to increase/decrease stepSize
 					/*if (vpsum >= prevCostFunc[j]) {
 						learningRate[j] *= stepParameter;
@@ -5206,7 +5206,7 @@ var clm = {
 						learningRate[j] = 1.0;
 					}
 					prevCostFunc[j] = vpsum;*/
-					
+
 					// compute mean shift vectors
 					// extrapolate meanshiftvectors
 					/*var msv = [];
@@ -5214,14 +5214,14 @@ var clm = {
 					msv[1] = learningRate[j]*(vecpos[1] - currentPositions[j][1]);
 					meanshiftVectors[j] = msv;*/
 					meanshiftVectors[j] = [vecpos[0] - currentPositions[j][0], vecpos[1] - currentPositions[j][1]];
-					
+
 					//if (isNaN(msv[0]) || isNaN(msv[1])) debugger;
-					
+
 					//for debugging
 					//debugMVs[j] = debugMatrixMV;
 					//
 				}
-				
+
 				// draw meanshiftVector
 				/*sketchCC.clearRect(0, 0, sketchW, sketchH);
 				var nuWeights;
@@ -5229,13 +5229,13 @@ var clm = {
 					nuWeights = debugMVs[npidx].map(function(x) {return x*255*500;});
 					drawData(sketchCC, nuWeights, searchWindow, searchWindow, false, patchPositions[npidx][0]-((searchWindow-1)/2), patchPositions[npidx][1]-((searchWindow-1)/2));
 				}*/
-				
+
 				var meanShiftVector = numeric.rep([numPatches*2, 1],0.0);
 				for (var k = 0;k < numPatches;k++) {
 					meanShiftVector[k*2][0] = meanshiftVectors[k][0];
 					meanShiftVector[(k*2)+1][0] = meanshiftVectors[k][1];
 				}
-				
+
 				// compute pdm parameter update
 				//var prior = numeric.mul(gaussianPD, PDMVariance);
 				var prior = numeric.mul(gaussianPD, varianceSeq[i]);
@@ -5258,14 +5258,14 @@ var clm = {
 				var paramUpdateRight = numeric.sub(priorP, jtv);
 				var paramUpdate = numeric.dot(numeric.inv(paramUpdateLeft), paramUpdateRight);
 				//var paramUpdate = numeric.solve(paramUpdateLeft, paramUpdateRight, true);
-				
+
 				var oldPositions = currentPositions;
-				
+
 				// update estimated parameters
 				for (var k = 0;k < numParameters+4;k++) {
 					currentParameters[k] -= paramUpdate[k];
 				}
-				
+
 				// clipping of parameters if they're too high
 				var clip;
 				for (var k = 0;k < numParameters;k++) {
@@ -5277,12 +5277,12 @@ var clm = {
 							currentParameters[k+4] = -clip;
 						}
 					}
-					
+
 				}
-				
+
 				// update current coordinates
 				currentPositions = calculatePositions(currentParameters, true);
-				
+
 				// check if converged
 				// calculate norm of parameterdifference
 				var positionNorm = 0;
@@ -5293,29 +5293,29 @@ var clm = {
 					positionNorm += ((pnsq_x*pnsq_x) + (pnsq_y*pnsq_y));
 				}
 				//console.log("positionnorm:"+positionNorm);
-				
+
 				// if norm < limit, then break
 				if (positionNorm < convergenceLimit) {
 					break;
 				}
-			
+
 			}
-			
+
 			if (params.constantVelocity) {
 				// add current parameter to array of previous parameters
 				previousParameters.push(currentParameters.slice());
 				previousParameters.splice(0, previousParameters.length == 3 ? 1 : 0);
 			}
-			
+
 			// store positions, for checking convergence
 			previousPositions.splice(0, previousPositions.length == 10 ? 1 : 0);
 			previousPositions.push(currentPositions.slice(0));
-			
+
 			// send an event on each iteration
 			var evt = document.createEvent("Event");
 			evt.initEvent("clmtrackrIteration", true, true);
 			document.dispatchEvent(evt)
-			
+
 			if (this.getConvergence() < 0.5) {
 				// we must get a score before we can say we've converged
 				if (scoringHistory.length >= 5) {
@@ -5328,7 +5328,7 @@ var clm = {
 					document.dispatchEvent(evt)
 				}
 			}
-			
+
 			// return new points
 			return currentPositions;
 		}
@@ -5352,19 +5352,19 @@ var clm = {
 		 */
 		this.draw = function(canvas, pv, path) {
 			// if no previous points, just draw in the middle of canvas
-			
+
 			var params;
 			if (pv === undefined) {
 				params = currentParameters.slice(0);
 			} else {
 				params = pv.slice(0);
 			}
-			
+
 			var cc = canvas.getContext('2d');
 			cc.fillStyle = "rgb(200,200,200)";
 			cc.strokeStyle = "rgb(130,255,50)";
 			cc.lineWidth = 1;
-			
+
 			var paths;
 			if (path === undefined) {
 				paths = model.path.normal;
@@ -5395,7 +5395,7 @@ var clm = {
 		this.calculatePositions = function(parameters) {
 			return calculatePositions(parameters, true);
 		}
-		
+
 		/*
 		 *	get coordinates of current model fit
 		 */
@@ -5406,7 +5406,7 @@ var clm = {
 				return currentPositions;
 			}
 		}
-		
+
 		/*
 		 *	get parameters of current model fit
 		 */
@@ -5420,13 +5420,13 @@ var clm = {
 		 */
 		this.getConvergence = function() {
 			if (previousPositions.length < 10) return 999999;
-			
+
 			var prevX = 0.0;
 			var prevY = 0.0;
 			var currX = 0.0;
 			var currY = 0.0;
-			
-			// average 5 previous positions 
+
+			// average 5 previous positions
 			for (var i = 0;i < 5;i++) {
 				for (var j = 0;j < numPatches;j++) {
 					prevX += previousPositions[i][j][0];
@@ -5435,7 +5435,7 @@ var clm = {
 			}
 			prevX /= 5;
 			prevY /= 5;
-			
+
 			// average 5 positions before that
 			for (var i = 5;i < 10;i++) {
 				for (var j = 0;j < numPatches;j++) {
@@ -5453,7 +5453,7 @@ var clm = {
 			msavg /= previousPositions.length
 			return msavg;
 		}
-		
+
 		/*
 		 * Set response mode (only useful if webGL is available)
 		 * mode : either "single", "blend" or "cycle"
@@ -5482,7 +5482,7 @@ var clm = {
 					if (['raw', 'sobel', 'lbp'].indexOf(list[i]) < 0) {
 						console.log("Unknown element in responsemode list : '"+list[i]+"'. No changes made.");
 					}
-					// check whether filters are initialized 
+					// check whether filters are initialized
 					if (list[i] == 'sobel' && sobelInit == false) {
 						console.log("The sobel filters have not been initialized! No changes made.");
 					}
@@ -5506,7 +5506,7 @@ var clm = {
 				if (!tracking) continue;
 			}
 		}.bind(this);
-		
+
 		var getWebGLResponsesType = function(type, patches) {
 			if (type == 'lbp') {
 				return webglFi.getLBPResponses(patches);
@@ -5516,7 +5516,7 @@ var clm = {
 				return webglFi.getSobelResponses(patches);
 			}
 		}
-		
+
 		var getWebGLResponses = function(patches) {
 			if (responseMode == 'single') {
 				return getWebGLResponsesType(responseList[0], patches);
@@ -5548,7 +5548,7 @@ var clm = {
 
 		// generates the jacobian matrix used for optimization calculations
 		var createJacobian = function(parameters, eigenVectors) {
-			
+
 			var jacobian = numeric.rep([2*numPatches, numParameters+4],0.0);
 			var j0,j1;
 			for (var i = 0;i < numPatches;i ++) {
@@ -5584,10 +5584,10 @@ var clm = {
 					jacobian[(i*2)+1][j+4] = j1;
 				}
 			}
-			
+
 			return jacobian;
 		}
-		
+
 		// calculate positions from parameters
 		var calculatePositions = function(parameters, useTransforms) {
 			var x, y, a, b;
@@ -5608,10 +5608,10 @@ var clm = {
 				}
 				positions[i] = [x,y];
 			}
-			
+
 			return positions;
 		}
-		
+
 		// detect position of face on canvas/video element
 		var detectPosition = function(el) {
 			var canvas = document.createElement('canvas');
@@ -5619,30 +5619,30 @@ var clm = {
 			canvas.height = el.height;
 			var cc = canvas.getContext('2d');
 			cc.drawImage(el, 0, 0, el.width, el.height);
-			
+
 			// do viola-jones on canvas to get initial guess, if we don't have any points
 			/*var comp = ccv.detect_objects(
 				ccv.grayscale(canvas), ccv.cascade, 5, 1
 			);*/
-			
+
 			var jf = new jsfeat_face(canvas);
 			var comp = jf.findFace();
-			
+
 			if (comp.length > 0) {
 				candidate = comp[0];
 			} else {
 				return false;
 			}
-			
+
 			for (var i = 1; i < comp.length; i++) {
 				if (comp[i].confidence > candidate.confidence) {
 					candidate = comp[i];
 				}
 			}
-			
+
 			return candidate;
 		}
-		
+
 		// part one of meanshift calculation
 		var gpopt = function(responseWidth, currentPositionsj, updatePosition, vecProbs, responses, opj0, opj1, j, variance, scaling) {
 			var pos_idx = 0;
@@ -5656,20 +5656,20 @@ var clm = {
 					dx = currentPositionsj[0] - updatePosition[0];
 					dy = currentPositionsj[1] - updatePosition[1];
 					vecProbs[pos_idx] = responses[j][pos_idx] * Math.exp(-0.5*((dx*dx)+(dy*dy))/(variance*scaling));
-					
+
 					vpsum += vecProbs[pos_idx];
 					pos_idx++;
 				}
 			}
-			
+
 			return vpsum;
 		}
-		
+
 		// part two of meanshift calculation
 		var gpopt2 = function(responseWidth, vecpos, updatePosition, vecProbs, vpsum, opj0, opj1, scaling) {
 			//for debugging
 			//var vecmatrix = [];
-			
+
 			var pos_idx = 0;
 			var vecsum = 0;
 			vecpos[0] = 0;
@@ -5679,10 +5679,10 @@ var clm = {
 				for (var l = 0;l < responseWidth;l++) {
 					updatePosition[0] = opj0+(l*scaling);
 					vecsum = vecProbs[pos_idx]/vpsum;
-					
+
 					//for debugging
 					//vecmatrix[k*responseWidth + l] = vecsum;
-					
+
 					vecpos[0] += vecsum*updatePosition[0];
 					vecpos[1] += vecsum*updatePosition[1];
 					pos_idx++;
@@ -5691,9 +5691,9 @@ var clm = {
 			// for debugging
 			//return vecmatrix;
 		}
-		
+
 		// calculate score of current fit
-		var checkTracking = function() {			
+		var checkTracking = function() {
 			scoringContext.drawImage(sketchCanvas, Math.round(msxmin+(msmodelwidth/4.5)), Math.round(msymin-(msmodelheight/12)), Math.round(msmodelwidth-(msmodelwidth*2/4.5)), Math.round(msmodelheight-(msmodelheight/12)), 0, 0, 20, 22);
 			// getImageData of canvas
 			var imgData = scoringContext.getImageData(0,0,20,22);
@@ -5720,7 +5720,7 @@ var clm = {
 				}
 				sd /= (20*22 - 1)
 				sd = Math.sqrt(sd);
-				
+
 				var score = 0;
 				for (var i = 0;i < 20*22;i++) {
 					scoringData[i] = (scoringData[i]-mean)/sd;
@@ -5745,7 +5745,7 @@ var clm = {
 			}
 			return true;
 		}
-		
+
 		// get initial starting point for model
 		var getInitialPosition = function(element, box) {
 			var translateX, translateY, scaling, rotation;
@@ -5758,15 +5758,15 @@ var clm = {
 					return false;
 				}
 			}
-			
+
 			if (model.hints && mosseFilter && left_eye_filter && right_eye_filter && nose_filter) {
 				var noseFilterWidth = candidate.width * 4.5/10;
 				var eyeFilterWidth = candidate.width * 6/10;
-				
+
 				// detect position of eyes and nose via mosse filter
 				//
 				/*element.pause();
-				
+
 				var canvasContext = document.getElementById('overlay2').getContext('2d')
 				canvasContext.clearRect(0,0,500,375);
 				canvasContext.strokeRect(candidate.x, candidate.y, candidate.width, candidate.height);*/
@@ -5781,89 +5781,26 @@ var clm = {
 				left_eye_position[1] = Math.round(candidate.y+candidate.height*(2/5)-(eyeFilterWidth/2))+left_result[1];
 				nose_position[0] = Math.round(candidate.x+(candidate.width/2)-(noseFilterWidth/2))+nose_result[0];
 				nose_position[1] = Math.round(candidate.y+candidate.height*(5/8)-(noseFilterWidth/2))+nose_result[1];
-				
-				//
-				/*canvasContext.strokeRect(Math.round(candidate.x+(candidate.width*3/4)-(eyeFilterWidth/2)), Math.round(candidate.y+candidate.height*(2/5)-(eyeFilterWidth/2)), eyeFilterWidth, eyeFilterWidth);
-				canvasContext.strokeRect(Math.round(candidate.x+(candidate.width/4)-(eyeFilterWidth/2)), Math.round(candidate.y+candidate.height*(2/5)-(eyeFilterWidth/2)), eyeFilterWidth, eyeFilterWidth);
-				//canvasContext.strokeRect(Math.round(candidate.x+(candidate.width/2)-(noseFilterWidth/2)), Math.round(candidate.y+candidate.height*(3/4)-(noseFilterWidth/2)), noseFilterWidth, noseFilterWidth);
-				canvasContext.strokeRect(Math.round(candidate.x+(candidate.width/2)-(noseFilterWidth/2)), Math.round(candidate.y+candidate.height*(5/8)-(noseFilterWidth/2)), noseFilterWidth, noseFilterWidth);
-				
-				canvasContext.fillStyle = "rgb(0,0,250)";
-				canvasContext.beginPath();
-				canvasContext.arc(left_eye_position[0], left_eye_position[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();
-				
-				canvasContext.beginPath();
-				canvasContext.arc(right_eye_position[0], right_eye_position[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();
-				
-				canvasContext.beginPath();
-				canvasContext.arc(nose_position[0], nose_position[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();
-				
-				debugger;
-				element.play()
-				canvasContext.clearRect(0,0,element.width,element.height);*/
-				//
-				
+
 				// get eye and nose positions of model
 				var lep = model.hints.leftEye;
 				var rep = model.hints.rightEye;
 				var mep = model.hints.nose;
-				
+
 				// get scaling, rotation, etc. via procrustes analysis
 				var procrustes_params = procrustes([left_eye_position, right_eye_position, nose_position], [lep, rep, mep]);
 				translateX = procrustes_params[0];
 				translateY = procrustes_params[1];
 				scaling = procrustes_params[2];
 				rotation = procrustes_params[3];
-				
-				//element.play();
-				
-				//var maxscale = 1.10;
-				//if ((scaling*modelHeight)/candidate.height < maxscale*0.7) scaling = (maxscale*0.7*candidate.height)/modelHeight;
-				//if ((scaling*modelHeight)/candidate.height > maxscale*1.2) scaling = (maxscale*1.2*candidate.height)/modelHeight;
-				
-				/*var smean = [0,0];
-				smean[0] += lep[0];
-				smean[1] += lep[1];
-				smean[0] += rep[0];
-				smean[1] += rep[1];
-				smean[0] += mep[0];
-				smean[1] += mep[1];
-				smean[0] /= 3;
-				smean[1] /= 3;
-				
-				var nulep = [(lep[0]*scaling*Math.cos(-rotation)+lep[1]*scaling*Math.sin(-rotation))+translateX, (lep[0]*scaling*(-Math.sin(-rotation)) + lep[1]*scaling*Math.cos(-rotation))+translateY];
-				var nurep = [(rep[0]*scaling*Math.cos(-rotation)+rep[1]*scaling*Math.sin(-rotation))+translateX, (rep[0]*scaling*(-Math.sin(-rotation)) + rep[1]*scaling*Math.cos(-rotation))+translateY];
-				var numep = [(mep[0]*scaling*Math.cos(-rotation)+mep[1]*scaling*Math.sin(-rotation))+translateX, (mep[0]*scaling*(-Math.sin(-rotation)) + mep[1]*scaling*Math.cos(-rotation))+translateY];
-				
-				canvasContext.fillStyle = "rgb(200,10,100)";
-				canvasContext.beginPath();
-				canvasContext.arc(nulep[0], nulep[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();
-				
-				canvasContext.beginPath();
-				canvasContext.arc(nurep[0], nurep[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();
-				
-				canvasContext.beginPath();
-				canvasContext.arc(numep[0], numep[1], 3, 0, Math.PI*2, true);
-				canvasContext.closePath();
-				canvasContext.fill();*/
-				
+
 				currentParameters[0] = (scaling*Math.cos(rotation))-1;
 				currentParameters[1] = (scaling*Math.sin(rotation));
 				currentParameters[2] = translateX;
 				currentParameters[3] = translateY;
-				
+
 				//this.draw(document.getElementById('overlay'), currentParameters);
-				
+
 			} else {
 				scaling = candidate.width/modelheight;
 				//var ccc = document.getElementById('overlay').getContext('2d');
@@ -5874,12 +5811,12 @@ var clm = {
 				currentParameters[2] = translateX;
 				currentParameters[3] = translateY;
 			}
-		
+
 			currentPositions = calculatePositions(currentParameters, true);
-			
+
 			return [scaling, rotation, translateX, translateY];
 		}
-		
+
 		// draw a parametrized line on a canvas
 		var drawPath = function(canvasContext, path, dp) {
 			canvasContext.beginPath();
@@ -5896,7 +5833,7 @@ var clm = {
 				b = dp[0]*y + dp[1]*x + dp[3];
 				x += a;
 				y += b;
-				
+
 				if (i == 0) {
 					canvasContext.moveTo(x,y);
 				} else {
@@ -5907,7 +5844,7 @@ var clm = {
 			canvasContext.closePath();
 			canvasContext.stroke();
 		}
-		
+
 		// draw a point on a canvas
 		function drawPoint(canvasContext, point, dp) {
 			var i, x, y, a, b;
@@ -5927,7 +5864,7 @@ var clm = {
 			canvasContext.closePath();
 			canvasContext.fill();
 		}
-		
+
 		// procrustes analysis
 		function procrustes(template, shape) {
 			// assume template and shape is a vector of x,y-coordinates
@@ -5942,7 +5879,7 @@ var clm = {
 			}
 			shape = shapeClone;
 			template = templateClone;
-			
+
 			// calculate translation
 			var templateMean = [0.0, 0.0];
 			for (var i = 0;i < template.length;i++) {
@@ -5951,7 +5888,7 @@ var clm = {
 			}
 			templateMean[0] /= template.length;
 			templateMean[1] /= template.length;
-			
+
 			var shapeMean = [0.0, 0.0];
 			for (var i = 0;i < shape.length;i++) {
 				shapeMean[0] += shape[i][0];
@@ -5959,10 +5896,10 @@ var clm = {
 			}
 			shapeMean[0] /= shape.length;
 			shapeMean[1] /= shape.length;
-			
+
 			var translationX = templateMean[0] - shapeMean[0];
 			var translationY = templateMean[1] - shapeMean[1];
-			
+
 			// centralize
 			for (var i = 0;i < shape.length;i++) {
 				shape[i][0] -= shapeMean[0];
@@ -5972,32 +5909,32 @@ var clm = {
 				template[i][0] -= templateMean[0];
 				template[i][1] -= templateMean[1];
 			}
-			
+
 			// scaling
-			
+
 			var scaleS = 0.0;
 			for (var i = 0;i < shape.length;i++) {
 				scaleS += ((shape[i][0])*(shape[i][0]));
 				scaleS += ((shape[i][1])*(shape[i][1]));
 			}
 			scaleS = Math.sqrt(scaleS/shape.length);
-			
+
 			var scaleT = 0.0;
 			for (var i = 0;i < template.length;i++) {
 				scaleT += ((template[i][0])*(template[i][0]));
 				scaleT += ((template[i][1])*(template[i][1]));
 			}
 			scaleT = Math.sqrt(scaleT/template.length);
-			
+
 			var scaling = scaleT/scaleS;
-			
+
 			for (var i = 0;i < shape.length;i++) {
 				shape[i][0] *= scaling;
 				shape[i][1] *= scaling;
 			}
-				
+
 			// rotation
-			
+
 			var top = 0.0;
 			var bottom = 0.0;
 			for (var i = 0;i < shape.length;i++) {
@@ -6005,14 +5942,14 @@ var clm = {
 				bottom += (shape[i][0]*template[i][0] + shape[i][1]*template[i][1]);
 			}
 			var rotation = Math.atan(top/bottom);
-			
+
 			translationX += (shapeMean[0]-(scaling*Math.cos(-rotation)*shapeMean[0])-(scaling*shapeMean[1]*Math.sin(-rotation)));
 			translationY += (shapeMean[1]+(scaling*Math.sin(-rotation)*shapeMean[0])-(scaling*shapeMean[1]*Math.cos(-rotation)));
-			
+
 			//returns rotation, scaling, transformx and transformx
 			return [translationX, translationY, scaling, rotation];
 		}
-		
+
 		// function to draw pixeldata on some canvas, only used for debugging
 		var drawData = function(canvasContext, data, width, height, transposed, drawX, drawY) {
 			var psci = canvasContext.createImageData(width, height);
@@ -6032,7 +5969,7 @@ var clm = {
 			}
 			canvasContext.putImageData(psci, drawX, drawY);
 		}
-		
+
 		var requestAnimFrame = (function() {
 			return window.requestAnimationFrame ||
 			window.webkitRequestAnimationFrame ||
@@ -6043,7 +5980,7 @@ var clm = {
 				return window.setTimeout(callback, 1000/60);
 			};
 		})();
-		
+
 		var cancelRequestAnimFrame = (function() {
 			return window.cancelCancelRequestAnimationFrame ||
 				window.webkitCancelRequestAnimationFrame ||
@@ -6052,7 +5989,7 @@ var clm = {
 				window.msCancelRequestAnimationFrame ||
 				window.clearTimeout;
 		})();
-		
+
 		return true;
 	}
 }
@@ -6066,16 +6003,16 @@ var webglFilter = function() {
    * 0 : raw filter
    * 1 : patches
    * 2 : finished response
-   * 3 : grad/lbp treated patches 
+   * 3 : grad/lbp treated patches
    * 4 : sobel filter
    * 5 : lbp filter
-   * 
+   *
    * Routing:
    *         (              )  0/4/5 --\
    *         (              )          _\|
    * 1 ----> ( ---------->3 ) ----------> 2
    *         lbpResponse/      patchResponse
-   *         gradientResponse  
+   *         gradientResponse
    */
 
   var gl, canvas;
@@ -6088,7 +6025,7 @@ var webglFilter = function() {
   var drawOutRectangles, drawOutImages, drawOutLayer;
   var patchCells, textureWidth, textureHeight, patchSize, patchArray;
   var biases;
-  
+
   var lbpResponseProgram;
   var lbo, lbpTexCoordLocation, lbpTexCoordBuffer, lbpPositionLocation, lbpAPositionBuffer;
 
@@ -6130,10 +6067,10 @@ var webglFilter = function() {
     "}"
   ].join('\n');
   var gradientResponseFS;
-  
+
   var patchResponseVS;
   var patchResponseFS;
-  
+
   var drawResponsesVS = [
     "attribute vec2 a_texCoord_draw;",
     "attribute vec2 a_position_draw;",
@@ -6163,7 +6100,7 @@ var webglFilter = function() {
     "   v_select = a_patchChoice_draw;",
     "}"
   ].join('\n');
-  
+
   var drawResponsesFS = [
     "precision mediump float;",
     "",
@@ -6201,7 +6138,7 @@ var webglFilter = function() {
     "  gl_FragColor = res;",
     "}"
   ].join('\n');
-  
+
   this.init = function(filters, bias, nP, pW, pH, fW, fH) {
     // we assume filterVector goes from left to right, rowwise, i.e. row-major order
 
@@ -6209,13 +6146,13 @@ var webglFilter = function() {
       alert("filter width and height must be same size!");
       return;
     }
-    
+
     // if filter width is not odd, alert
     if (fW % 2 == 0 || fH % 2 == 0) {
       alert("filters used in svm must be of odd dimensions!");
       return;
     }
-    
+
     // setup variables
     biases = bias;
     filterWidth = fW;
@@ -6279,7 +6216,7 @@ var webglFilter = function() {
       "  gl_FragColor = colorSum;",
       "}"
     ].join('\n');
-    
+
     patchResponseVS = [
       "attribute vec2 a_texCoord;",
       "attribute vec2 a_position;",
@@ -6391,14 +6328,14 @@ var webglFilter = function() {
     document.body.appendChild(canvas);
     // TODO : isolate this library from webgl-util.js
     gl = setupWebGL(canvas, {premultipliedAlpha: false, preserveDrawingBuffer : true, antialias : false});
-    
+
 
     // check for float textures support and fail if not
     if (!gl.getExtension("OES_texture_float")) {
       alert("Your graphics card does not support floating point textures! :(");
       return;
     }
-    
+
     /** insert filters into textures **/
     if ('raw' in filters) {
       insertFilter(filters['raw'], gl.TEXTURE0)
@@ -6414,7 +6351,7 @@ var webglFilter = function() {
     }
 
     /** calculate vertices for calculating responses **/
-    
+
     // vertex rectangles to draw out
     var rectangles = [];
     var halfFilter = (filterWidth-1)/2;
@@ -6423,19 +6360,19 @@ var webglFilter = function() {
       yOffset = i*patchHeight;
       //first triangle
       rectangles = rectangles.concat(
-        [halfFilter, yOffset+halfFilter, 
+        [halfFilter, yOffset+halfFilter,
         patchWidth-halfFilter, yOffset+halfFilter,
         halfFilter, yOffset+patchHeight-halfFilter]
       );
       //second triangle
       rectangles = rectangles.concat(
-        [halfFilter, yOffset+patchHeight-halfFilter, 
+        [halfFilter, yOffset+patchHeight-halfFilter,
         patchWidth-halfFilter, yOffset+halfFilter,
         patchWidth-halfFilter, yOffset+patchHeight-halfFilter]
       );
     }
     rectangles = new Float32Array(rectangles);
-    
+
     // image rectangles to draw out
     var irectangles = [];
     for (var i = 0;i < rectangles.length;i++) {
@@ -6457,19 +6394,19 @@ var webglFilter = function() {
         yOffset = i * (2/numBlocks);
         //first triangle
         gradRectangles = gradRectangles.concat(
-          [-1.0, topCoord - yOffset, 
+          [-1.0, topCoord - yOffset,
           1.0, topCoord - yOffset,
           -1.0, bottomCoord - yOffset]
         );
         //second triangle
         gradRectangles = gradRectangles.concat(
-          [-1.0, bottomCoord - yOffset, 
+          [-1.0, bottomCoord - yOffset,
           1.0, topCoord - yOffset,
           1.0, bottomCoord - yOffset]
         );
       }
       gradRectangles = new Float32Array(gradRectangles);
-      
+
       topCoord = 1.0 - 1/(patchHeight*numBlocks);
       bottomCoord = 1.0 - 1/numBlocks + 1/(patchHeight*numBlocks);
       // calculate position of image rectangles to draw out
@@ -6478,13 +6415,13 @@ var webglFilter = function() {
         yOffset = i * (1/numBlocks);
         //first triangle
         gradIRectangles = gradIRectangles.concat(
-          [0.0, topCoord - yOffset, 
+          [0.0, topCoord - yOffset,
           1.0, topCoord - yOffset,
           0.0, bottomCoord - yOffset]
         );
         //second triangle
         gradIRectangles = gradIRectangles.concat(
-          [0.0, bottomCoord - yOffset, 
+          [0.0, bottomCoord - yOffset,
           1.0, topCoord - yOffset,
           1.0, bottomCoord - yOffset]
         );
@@ -6500,7 +6437,7 @@ var webglFilter = function() {
     for (var i = 0;i < numPatches;i++) {
       yOffset = i*newCanvasBlockHeight;
       indexOffset = i*12;
-      
+
       //first triangle
       drawOutRectangles[indexOffset] = 0.0;
       drawOutRectangles[indexOffset+1] = yOffset;
@@ -6508,7 +6445,7 @@ var webglFilter = function() {
       drawOutRectangles[indexOffset+3] = yOffset;
       drawOutRectangles[indexOffset+4] = 0.0;
       drawOutRectangles[indexOffset+5] = yOffset+newCanvasBlockHeight;
-      
+
       //second triangle
       drawOutRectangles[indexOffset+6] = 0.0;
       drawOutRectangles[indexOffset+7] = yOffset+newCanvasBlockHeight;
@@ -6517,7 +6454,7 @@ var webglFilter = function() {
       drawOutRectangles[indexOffset+10] = newCanvasWidth;
       drawOutRectangles[indexOffset+11] = yOffset+newCanvasBlockHeight;
     }
-    
+
     // images
     drawOutImages = new Float32Array(numPatches*12);
     var halfFilterWidth = ((filterWidth-1)/2)/patchWidth;
@@ -6526,7 +6463,7 @@ var webglFilter = function() {
     for (var i = 0;i < numPatches;i++) {
       yOffset = Math.floor(i / 4)*patchHeightT;
       indexOffset = i*12;
-      
+
       //first triangle
       drawOutImages[indexOffset] = halfFilterWidth;
       drawOutImages[indexOffset+1] = yOffset+halfFilterHeight;
@@ -6534,7 +6471,7 @@ var webglFilter = function() {
       drawOutImages[indexOffset+3] = yOffset+halfFilterHeight;
       drawOutImages[indexOffset+4] = halfFilterWidth;
       drawOutImages[indexOffset+5] = yOffset+patchHeightT-halfFilterHeight;
-      
+
       //second triangle
       drawOutImages[indexOffset+6] = halfFilterWidth;
       drawOutImages[indexOffset+7] = yOffset+patchHeightT-halfFilterHeight;
@@ -6543,7 +6480,7 @@ var webglFilter = function() {
       drawOutImages[indexOffset+10] = 1.0-halfFilterWidth;
       drawOutImages[indexOffset+11] = yOffset+patchHeightT-halfFilterHeight;
     }
-    
+
     // layer
     drawOutLayer = new Float32Array(numPatches*6);
     var layernum;
@@ -6557,7 +6494,7 @@ var webglFilter = function() {
       drawOutLayer[indexOffset+4] = layernum;
       drawOutLayer[indexOffset+5] = layernum;
     }
-    
+
     /** set up programs and load attributes etc **/
 
     if ('sobel' in filters) {
@@ -6573,7 +6510,7 @@ var webglFilter = function() {
       gl.bufferData(gl.ARRAY_BUFFER, gradRectangles, gl.STATIC_DRAW);
       gl.enableVertexAttribArray(gradPositionLocation);
       gl.vertexAttribPointer(gradPositionLocation, 2, gl.FLOAT, false, 0, 0);
-      
+
       // set up texture positions
       gradTexCoordLocation = gl.getAttribLocation(gradientResponseProgram, "a_texCoord");
       gradTexCoordBuffer = gl.createBuffer();
@@ -6581,7 +6518,7 @@ var webglFilter = function() {
       gl.bufferData(gl.ARRAY_BUFFER, gradIRectangles, gl.STATIC_DRAW);
       gl.enableVertexAttribArray(gradTexCoordLocation);
       gl.vertexAttribPointer(gradTexCoordLocation, 2, gl.FLOAT, false, 0, 0);
-      
+
       // set up patches texture in gradientResponseProgram
       gl.uniform1i(gl.getUniformLocation(gradientResponseProgram, "u_patches"), 1);
     }
@@ -6598,7 +6535,7 @@ var webglFilter = function() {
       gl.bufferData(gl.ARRAY_BUFFER, gradRectangles, gl.STATIC_DRAW);
       gl.enableVertexAttribArray(lbpPositionLocation);
       gl.vertexAttribPointer(lbpPositionLocation, 2, gl.FLOAT, false, 0, 0);
-      
+
       // set up texture positions
       gradTexCoordLocation = gl.getAttribLocation(lbpResponseProgram, "a_texCoord");
       lbpTexCoordBuffer = gl.createBuffer();
@@ -6616,21 +6553,21 @@ var webglFilter = function() {
     var drFragmentShader = loadShader(gl, drawResponsesFS, gl.FRAGMENT_SHADER);
     patchDrawProgram = createProgram(gl, [drVertexShader, drFragmentShader]);
     gl.useProgram(patchDrawProgram);
-    
+
     // set the resolution/dimension of the canvas
     var resolutionLocation = gl.getUniformLocation(patchDrawProgram, "u_resolutiondraw");
     gl.uniform2f(resolutionLocation, newCanvasWidth, newCanvasHeight);
-    
+
     // set u_responses
     var responsesLocation = gl.getUniformLocation(patchDrawProgram, "u_responses");
     gl.uniform1i(responsesLocation, 2);
-    
+
     // setup patchresponse program
     var prVertexShader = loadShader(gl, patchResponseVS, gl.VERTEX_SHADER);
     var prFragmentShader = loadShader(gl, patchResponseFS, gl.FRAGMENT_SHADER);
     patchResponseProgram = createProgram(gl, [prVertexShader, prFragmentShader]);
     gl.useProgram(patchResponseProgram);
-    
+
     // set up vertices with rectangles
     var positionLocation = gl.getAttribLocation(patchResponseProgram, "a_position");
     apositionBuffer = gl.createBuffer();
@@ -6638,7 +6575,7 @@ var webglFilter = function() {
     gl.bufferData(gl.ARRAY_BUFFER, rectangles, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     // set up texture positions
     texCoordLocation = gl.getAttribLocation(patchResponseProgram, "a_texCoord");
     texCoordBuffer = gl.createBuffer();
@@ -6673,7 +6610,7 @@ var webglFilter = function() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, patchWidth, patchHeight*numBlocks, 0, gl.RGBA, gl.FLOAT, null);
-    
+
     // set up response framebuffer
     fbo = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -6691,9 +6628,9 @@ var webglFilter = function() {
 
   this.getRawResponses = function(patches) {
     // TODO: check patches correct length/dimension
-    
+
     insertPatches(patches);
-    
+
     // switch to correct program
     gl.useProgram(patchResponseProgram);
 
@@ -6702,32 +6639,32 @@ var webglFilter = function() {
 
     // set u_filters to point to correct filter
     gl.uniform1i(gl.getUniformLocation(patchResponseProgram, "u_filters"), 0);
-      
+
     // set up vertices with rectangles
     var positionLocation = gl.getAttribLocation(patchResponseProgram, "a_position");
     gl.bindBuffer(gl.ARRAY_BUFFER, apositionBuffer);
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     // set up texture positions
     var texCoordLocation = gl.getAttribLocation(patchResponseProgram, "a_texCoord");
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
     gl.enableVertexAttribArray(texCoordLocation);
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     // set framebuffer to the original one if not already using it
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    
+
     gl.viewport(0, 0, patchWidth, patchHeight*numBlocks);
-    
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER)
-    
+
     // draw to framebuffer
     gl.drawArrays(gl.TRIANGLES, 0, patchCells*6);
-    
+
     //gl.finish();
-    
+
     var responses = drawOut('raw');
 
     return responses;
@@ -6749,7 +6686,7 @@ var webglFilter = function() {
     gl.bindBuffer(gl.ARRAY_BUFFER, gradAPositionBuffer);
     gl.enableVertexAttribArray(gradPositionLocation);
     gl.vertexAttribPointer(gradPositionLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     // set up texture positions
     var gradTexCoordLocation = gl.getAttribLocation(gradientResponseProgram, "a_texCoord");
     gl.bindBuffer(gl.ARRAY_BUFFER, gradTexCoordBuffer);
@@ -6770,7 +6707,7 @@ var webglFilter = function() {
     /* calculate responses */
 
     gl.useProgram(patchResponseProgram);
-    
+
     // set patches and filters to point to correct textures
     gl.uniform1i(gl.getUniformLocation(patchResponseProgram, "u_filters"), 4);
     gl.uniform1i(gl.getUniformLocation(patchResponseProgram, "u_patches"), 3);
@@ -6785,13 +6722,13 @@ var webglFilter = function() {
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
     gl.enableVertexAttribArray(texCoordLocation);
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.viewport(0, 0, patchWidth, patchHeight*numBlocks);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER)
-    
+
     // draw to framebuffer
     gl.drawArrays(gl.TRIANGLES, 0, patchCells*6);
 
@@ -6818,7 +6755,7 @@ var webglFilter = function() {
     gl.bindBuffer(gl.ARRAY_BUFFER, lbpAPositionBuffer);
     gl.enableVertexAttribArray(lbpPositionLocation);
     gl.vertexAttribPointer(lbpPositionLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     // set up texture positions
     var lbpTexCoordLocation = gl.getAttribLocation(lbpResponseProgram, "a_texCoord");
     gl.bindBuffer(gl.ARRAY_BUFFER, lbpTexCoordBuffer);
@@ -6853,13 +6790,13 @@ var webglFilter = function() {
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
     gl.enableVertexAttribArray(texCoordLocation);
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.viewport(0, 0, patchWidth, patchHeight*numBlocks);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER)
-    
+
     // draw to framebuffer
     gl.drawArrays(gl.TRIANGLES, 0, patchCells*6);
 
@@ -6881,7 +6818,7 @@ var webglFilter = function() {
           patchesIndex1 = i*4;
           patchesIndex2 = (j*patchWidth) + k;
           patchArrayIndex = ((patchSize*i) + patchesIndex2)*4;
-          
+
           //set r with first patch
           if (patchesIndex1 < numPatches) {
             patchArray[patchArrayIndex] = patches[patchesIndex1][patchesIndex2];
@@ -6909,7 +6846,7 @@ var webglFilter = function() {
         }
       }
     }
-    
+
     // pass texture into an uniform
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, patchTex);
@@ -6967,64 +6904,64 @@ var webglFilter = function() {
   var drawOut = function(type) {
     // switch programs
     gl.useProgram(patchDrawProgram);
-    
+
     // bind canvas buffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, newCanvasWidth, newCanvasHeight);
-    
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, drawRectBuffer);
     gl.bufferData(
-      gl.ARRAY_BUFFER, 
-      drawOutRectangles, 
+      gl.ARRAY_BUFFER,
+      drawOutRectangles,
       gl.STATIC_DRAW);
     var positionLocation = gl.getAttribLocation(patchDrawProgram, "a_position_draw");
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, drawImageBuffer);
     gl.bufferData(
-      gl.ARRAY_BUFFER, 
-      drawOutImages, 
+      gl.ARRAY_BUFFER,
+      drawOutImages,
       gl.STATIC_DRAW);
     var textureLocation = gl.getAttribLocation(patchDrawProgram, "a_texCoord_draw");
     gl.enableVertexAttribArray(textureLocation);
     gl.vertexAttribPointer(textureLocation, 2, gl.FLOAT, false, 0, 0);
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, drawLayerBuffer);
     gl.bufferData(
-      gl.ARRAY_BUFFER, 
-      drawOutLayer, 
+      gl.ARRAY_BUFFER,
+      drawOutLayer,
       gl.STATIC_DRAW);
     var layerLocation = gl.getAttribLocation(patchDrawProgram, "a_patchChoice_draw");
     gl.enableVertexAttribArray(layerLocation);
     gl.vertexAttribPointer(layerLocation, 1, gl.FLOAT, false, 0, 0);
-    
+
     // draw out
     gl.drawArrays(gl.TRIANGLES, 0, numPatches*6);
 
     var responses = getOutput();
-    
+
     responses = unpackToFloat(responses);
-    
+
     // split
     responses = splitArray(responses, numPatches);
-    
+
     // add bias
     responses = addBias(responses, biases[type]);
-    
+
     // normalize responses to lie within [0,1]
     var rl = responses.length;
-    
+
     for (var i = 0;i < rl;i++) {
       responses[i] = normalizeFilterMatrix(responses[i]);
     }
 
     return responses;
   }
-  
+
   var addBias = function(responses, bias) {
     // do a little trick to add bias in the logit function
     var biasMult;
@@ -7036,7 +6973,7 @@ var webglFilter = function() {
     }
     return responses;
   }
-  
+
   var splitArray = function(array, parts) {
     var sp = [];
     var al = array.length;
@@ -7049,12 +6986,12 @@ var webglFilter = function() {
         }
         ta = [];
       }
-      ta.push(array[i]); 
+      ta.push(array[i]);
     }
     sp.push(ta);
     return sp;
   }
-  
+
   var getOutput = function() {
     // get data
     var pixelValues = new Uint8Array(4*canvas.width*canvas.height);
@@ -7062,7 +6999,7 @@ var webglFilter = function() {
     // return
     return pixelValues;
   }
-  
+
   var unpackToFloat = function(array) {
     // convert packed floats to proper floats : see http://stackoverflow.com/questions/9882716/packing-float-into-vec4-how-does-this-code-work
     var newArray = [];
@@ -7072,19 +7009,19 @@ var webglFilter = function() {
     }
     return newArray;
   }
-  
+
   var normalizeFilterMatrix = function(response) {
     // normalize responses to lie within [0,1]
     var msize = response.length;
     var max = 0;
     var min = 1;
-    
+
     for (var i = 0;i < msize;i++) {
       max = response[i] > max ? response[i] : max;
       min = response[i] < min ? response[i] : min;
     }
     var dist = max-min;
-    
+
     if (dist == 0) {
       console.log("a patchresponse was monotone, causing normalization to fail. Leaving it unchanged.")
       response = response.map(function() {return 1});
@@ -7093,7 +7030,7 @@ var webglFilter = function() {
         response[i] = (response[i]-min)/dist;
       }
     }
-    
+
     return response
   }
 };
@@ -7132,7 +7069,7 @@ var webglFilter = function() {
  */
 
 (function() {
-  
+
   /**
    * Wrapped logging function.
    * @param {string} msg The message to log.
@@ -7411,34 +7348,34 @@ var webglFilter = function() {
 "use strict";
 
 var svmFilter = function() {
-  
+
   var _fft, fft_filters, responses, biases;
   var fft_size, filterLength, filter_width, search_width, num_patches;
   var temp_imag_part, temp_real_part;
-  
+
   // fft function
   this.fft_inplace = function(array, _im_part) {
       // in-place
-      
+
       if (typeof _im_part == "undefined") {
         _im_part = temp_imag_part;
       }
-      
+
       for (var i = 0;i < filterLength;i++) {
         _im_part[i] = 0.0;
       }
-      
+
       _fft.real_fft2d(array,_im_part);
-      
+
       return [array, _im_part];
   }
-  
+
   this.ifft = function(rn, cn) {
       // in-place
       _fft.real_ifft2d(rn, cn);
       return rn;
   }
-  
+
   var complex_mult_inplace = function(cn1, cn2) {
       // in-place, cn1 is the one modified
       var temp1, temp2;
@@ -7449,11 +7386,11 @@ var svmFilter = function() {
           cn1[1][r] = temp2;
       }
   }
-  
+
   this.init = function(filter_input, bias_input, numPatches, filterWidth, searchWidth) {
-    
+
     var temp, fft, offset;
-    
+
     // calculate needed size of fft (has to be power of two)
     fft_size = upperPowerOfTwo(filterWidth-1+searchWidth);
     filterLength = fft_size*fft_size;
@@ -7462,25 +7399,25 @@ var svmFilter = function() {
     fft_filters = Array(numPatches);
     var fft_filter;
     var edge = (filterWidth-1)/2;
-    
+
     for (var i = 0;i < numPatches;i++) {
       var flar_fi0 = new Float64Array(filterLength);
       var flar_fi1 = new Float64Array(filterLength);
-      
-      // load filter 
+
+      // load filter
       var xOffset, yOffset;
       for (var j = 0;j < filterWidth;j++) {
         for (var k = 0;k < filterWidth;k++) {
           // TODO : rotate filter
-          
+
           xOffset = k < edge ? (fft_size-edge) : (-edge);
           yOffset = j < edge ? (fft_size-edge) : (-edge);
           flar_fi0[k+xOffset+((j+yOffset)*fft_size)] = filter_input[i][(filterWidth-1-j)+((filterWidth-1-k)*filterWidth)];
-          
+
           /*xOffset = k < edge ? (fft_size-edge) : (-edge);
           yOffset = j < edge ? (fft_size-edge) : (-edge);
           flar_fi0[k+xOffset+((j+yOffset)*fft_size)] = filter_input[i][k+(j*filterWidth)];*/
-          
+
           //console.log(k + ","+ j+":" + (k+xOffset+((j+yOffset)*fft_size)))
         }
       }
@@ -7490,13 +7427,13 @@ var svmFilter = function() {
       fft_filters[i] = fft_filter;
 
     }
-    
+
     // set up biases
     biases = new Float64Array(numPatches);
     for (var i = 0;i < numPatches;i++) {
       biases[i] = bias_input[i];
     }
-    
+
     responses = Array(numPatches);
     temp_imag_part = Array(numPatches);
     for (var i = 0;i < numPatches;i++) {
@@ -7504,12 +7441,12 @@ var svmFilter = function() {
       temp_imag_part[i] = new Float64Array(searchWidth*searchWidth);
     }
     temp_real_part = new Float64Array(filterLength);
-    
+
     num_patches = numPatches;
     filter_width = filterWidth;
     search_width = searchWidth;
   }
-  
+
   this.getResponses = function(patches) {
     var response, temp, edge;
     var patch_width = filter_width-1+search_width;
@@ -7518,28 +7455,28 @@ var svmFilter = function() {
       for (var j = 0;j < fft_size*fft_size;j++) {
         temp_real_part[j] = 0.0;
       }
-      
+
       // normalize patches to 0-1
       patches[i] = normalizePatches(patches[i]);
-      
+
       // patch must be padded (with zeroes) to match fft size
       for (var j = 0;j < patch_width;j++) {
         for (var k = 0;k < patch_width;k++) {
           temp_real_part[j + (fft_size*k)] = patches[i][k + (patch_width*j)];
         }
       }
-      
+
       //drawData(document.getElementById('sketch').getContext('2d'), temp_real_part, 32, 32, false, 0, 0);
-      
+
       // fft it
       response = this.fft_inplace(temp_real_part);
-      
+
       // multiply pointwise with filter
       complex_mult_inplace(response, fft_filters[i]);
-      
+
       // inverse fft it
       response = this.ifft(response[0], response[1]);
-      
+
       // crop out edges
       edge = (filter_width-1)/2;
       for (var j = 0;j < search_width;j++) {
@@ -7552,24 +7489,24 @@ var svmFilter = function() {
       for (var j = 0;j < search_width*search_width;j++) {
         responses[i][j] += biases[i];
       }
-      
+
       // logistic transformation
       responses[i] = logisticResponse(responses[i]);
-      
+
       /*responses[i] = new Float64Array(32*32)
       for (var j = 0;j < 32;j++) {
         for (var k = 0;k < 32;k++) {
           responses[i][k + (j*(32))] = response[k + (j*(32))]
         }
       }*/
-      
+
       // normalization?
       inplaceNormalizeFilterMatrix(responses[i]);
     }
-    
+
     return responses;
   }
-  
+
   var normalizePatches = function(patch) {
     var patch_width = filter_width-1+search_width;
     var max = 0;
@@ -7594,7 +7531,7 @@ var svmFilter = function() {
     }
     return patch;
   }
-  
+
   var logisticResponse = function(response) {
     // create probability by doing logistic transformation
     for (var j = 0;j < search_width;j++) {
@@ -7604,7 +7541,7 @@ var svmFilter = function() {
     }
     return response
   }
-  
+
   var upperPowerOfTwo = function(x) {
     x--;
     x |= x >> 1;
@@ -7615,19 +7552,19 @@ var svmFilter = function() {
     x++;
     return x;
   }
-  
+
   var inplaceNormalizeFilterMatrix = function(response) {
     // normalize responses to lie within [0,1]
     var msize = response.length;
     var max = 0;
     var min = 1;
-    
+
     for (var i = 0;i < msize;i++) {
       max = response[i] > max ? response[i] : max;
       min = response[i] < min ? response[i] : min;
     }
     var dist = max-min;
-    
+
     if (dist == 0) {
       console.log("a patchresponse was monotone, causing normalization to fail. Leaving it unchanged.")
     } else {
@@ -7640,18 +7577,18 @@ var svmFilter = function() {
   /**
    * Fast Fourier Transform
    * 1D-FFT/IFFT, 2D-FFT/IFFT (radix-2)
-   * 
+   *
    * @author ryo / github.com/wellflat
    * Based on https://github.com/wellflat/javascript-labs with some tiny optimizations
    */
 
   function FFT() {
-    
+
     var _n = 0,          // order
         _bitrev = null,  // bit reversal table
         _cstb = null;    // sin/cos table
     var _tre, _tim;
-    
+
     this.init = function (n) {
       if(n !== 0 && (n & (n - 1)) === 0) {
         _n = n;
@@ -7662,12 +7599,12 @@ var svmFilter = function() {
         throw new Error("init: radix-2 required");
       }
     }
-      
+
     // 1D-FFT
     this.fft1d = function (re, im) {
       fft(re, im, 1);
     }
-      
+
     // 1D-IFFT
     this.ifft1d = function (re, im) {
       var n = 1/_n;
@@ -7677,7 +7614,7 @@ var svmFilter = function() {
         im[i] *= n;
       }
     }
-    
+
     // 2D-FFT
     this.fft2d = function (re, im) {
       var i = 0;
@@ -7694,7 +7631,7 @@ var svmFilter = function() {
           im[x2 + i] = _tim[x2];
         }
       }
-      
+
       // y-axis
       for(var x=0; x<_n; x++) {
         for(var y1=0; y1<_n; y1++) {
@@ -7710,7 +7647,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     // 2D-IFFT
     this.ifft2d = function (re, im) {
       var i = 0;
@@ -7742,7 +7679,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     // 2D-IFFT, real-valued
     // only outputs the real valued part
     this.real_ifft2d = function (re, im) {
@@ -7788,7 +7725,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     // 2D-FFT, real-valued only
     // ignores the imaginary input
     //   see:
@@ -7844,7 +7781,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     // core operation of FFT
     function fft(re, im, inv) {
       var d, h, ik, m, tmp, wr, wi, xr, xi,
@@ -7882,7 +7819,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     function butfly(re, im, inv, n4) {
       var h,d,wr,wi,ik,xr,xi;
       for(var k=1; k<_n; k<<=1) {
@@ -7904,7 +7841,7 @@ var svmFilter = function() {
         }
       }
     }
-    
+
     // set variables
     function _setVariables() {
       if(typeof Uint8Array !== 'undefined') {
@@ -7922,7 +7859,7 @@ var svmFilter = function() {
         _tim = new Array(_n);
       }
     }
-    
+
     // make bit reversal table
     function _makeBitReversal() {
       var i = 0,
@@ -7939,7 +7876,7 @@ var svmFilter = function() {
         _bitrev[i] = j;
       }
     }
-    
+
     // make trigonometric function table
     function _makeCosSinTable() {
       var n2 = _n >> 1,
@@ -7976,14 +7913,14 @@ var svmFilter = function() {
 // requires mosse.js
 
 var mosseFilterResponses = function() {
-  
+
   var filters = [];
   var responses = [];
   var num_Patches = 0;
-  
+
   this.init = function(filter_input, numPatches, filterWidth, filterHeight) {
     // load filters, make fft ready
-    
+
     for (var i = 0;i < numPatches;i++) {
       var temp = {};
       temp.width = filterWidth;
@@ -8000,20 +7937,20 @@ var mosseFilterResponses = function() {
       filters[i] = new mosseFilter();
       filters[i].load(temp);
     }
-    
+
     num_Patches = numPatches;
   }
-  
+
   this.getResponses = function(patches) {
     for (var i = 0;i < num_Patches;i++) {
       responses[i] = filters[i].getResponse(patches[i]);
       //responses[i] = logisticResponse(responses[i]);
       responses[i] = normalizeFilterMatrix(responses[i]);
     }
-    
+
     return responses;
   }
-  
+
   var logisticResponse = function(response) {
     // create probability by doing logistic transformation
     var filter_size = response.length;
@@ -8022,19 +7959,19 @@ var mosseFilterResponses = function() {
     }
     return response;
   }
-  
+
   var normalizeFilterMatrix = function(response) {
     // normalize responses to lie within [0,1]
     var msize = response.length;
     var max = 0;
     var min = 1;
-    
+
     for (var i = 0;i < msize;i++) {
       max = response[i] > max ? response[i] : max;
       min = response[i] < min ? response[i] : min;
     }
     var dist = max-min;
-    
+
     if (dist == 0) {
       console.log("a patchresponse was monotone, causing normalization to fail. Leaving it unchanged.")
       response = response.map(function() {return 1});
@@ -8043,61 +7980,91 @@ var mosseFilterResponses = function() {
         response[i] = (response[i]-min)/dist;
       }
     }
-    
+
     return response
   }
 }
 
 (function(window) {
-    "use strict";
+    'use strict';
     
     window.webgazer = window.webgazer || {};
 
-    //TODO
+    const defaultWindowSize = 8;
+    const equalizeStep = 5;
+    const threshold = 80;
+    const minCorrelation = 0.78;
+    const maxCorrelation = 0.85;
+
     /**
      * Constructor for BlinkDetector
      * @param blinkWindow
      * @constructor
      */
     webgazer.BlinkDetector = function(blinkWindow) {
-        //TODO use DataWindow instead
-        this.blinkData = [];
         //determines number of previous eyeObj to hold onto
-        this.blinkWindow = blinkWindow || 8;
-
-        //cycles through to replace oldest entry
-        this.blinkWindowIndex = 0;
+        this.blinkWindow = blinkWindow || defaultWindowSize;
+        this.blinkData = new webgazer.util.DataWindow(this.blinkWindow);
     };
 
-    //TODO
+    webgazer.BlinkDetector.prototype.extractBlinkData = function(eyesObj) {
+        const eye = eyesObj.right;
+        const grayscaled = webgazer.util.grayscale(eye.patch.data, eye.width, eye.height);
+        const equalized = webgazer.util.equalizeHistogram(grayscaled, equalizeStep, grayscaled);
+        const thresholded = webgazer.util.threshold(equalized, threshold);
+        return {
+            data: thresholded,
+            width: eye.width,
+            height: eye.height,
+        };
+    }
+
+    webgazer.BlinkDetector.prototype.isSameEye = function(oldEye, newEye) {
+        return (oldEye.width === newEye.width) && (oldEye.height === newEye.height);
+    }
+
+    webgazer.BlinkDetector.prototype.isBlink = function(oldEye, newEye) {
+        let correlation = 0;
+        for (let i = 0; i < this.blinkWindow; i++) {
+            const data = this.blinkData.get(i);
+            const nextData = this.blinkData.get(i + 1);
+            if (!this.isSameEye(data, nextData)) {
+                return false;
+            }
+            correlation += webgazer.util.correlation(data.data, nextData.data);
+        }
+        correlation /= this.blinkWindow;
+        return correlation > minCorrelation && correlation < maxCorrelation;
+    }
+
     /**
      *
      * @param eyesObj
      * @returns {*}
      */
     webgazer.BlinkDetector.prototype.detectBlink = function(eyesObj) {
-        if (!eyesObj) {
-            return eyesObj;
-        }
-        if (this.blinkData.length < this.blinkWindow) {
-            this.blinkData.push(eyesObj);
-            eyesObj.left.blink = false;
-            eyesObj.right.blink = false;
+        if (!eyesObj || !webgazer.params.blinkDetectionOn) {
             return eyesObj;
         }
 
-        //replace oldest entry
-        this.blinkData[this.blinkWindowIndex] = eyesObj;
-        this.blinkWindowIndex = (this.blinkWindowIndex + 1) % this.blinkWindow;
-
-        //TODO detect if current eyeObj is different from eyeObj in blinkData;
+        const data = this.extractBlinkData(eyesObj);
+        this.blinkData.push(data);
 
         eyesObj.left.blink = false;
         eyesObj.right.blink = false;
+
+        if (this.blinkData.length < this.blinkWindow) {
+            return eyesObj;
+        }
+
+        if (this.isBlink()) {
+            eyesObj.left.blink = true;
+            eyesObj.right.blink = true;
+        }
+
         return eyesObj;
     };
 
-    //TODO
     /**
      *
      * @param value
@@ -8114,7 +8081,7 @@ var mosseFilterResponses = function() {
 
 
 (function(window) {
-    "use strict";
+    'use strict';
 
     window.webgazer = window.webgazer || {};
     webgazer.tracker = webgazer.tracker || {};
@@ -8193,7 +8160,9 @@ var mosseFilterResponses = function() {
 
         //Apply Kalman Filtering
         var leftBox = [leftOriginX, leftOriginY, leftOriginX + leftWidth, leftOriginY + leftHeight];
-        leftBox = this.leftKalman.update(leftBox);
+        if (webgazer.params.smoothEyeBB){
+          leftBox = this.leftKalman.update(leftBox);
+        }
         leftOriginX = Math.round(leftBox[0]);
         leftOriginY = Math.round(leftBox[1]);
         leftWidth = Math.round(leftBox[2] - leftBox[0]);
@@ -8201,7 +8170,9 @@ var mosseFilterResponses = function() {
 
         //Apply Kalman Filtering
         var rightBox = [rightOriginX, rightOriginY, rightOriginX + rightWidth, rightOriginY + rightHeight];
-        rightBox = this.rightKalman.update(rightBox);
+        if (webgazer.params.smoothEyeBB){
+          rightBox = this.rightKalman.update(rightBox);
+        }
         rightOriginX = Math.round(rightBox[0]);
         rightOriginY = Math.round(rightBox[1]);
         rightWidth = Math.round(rightBox[2] - rightBox[0]);
@@ -8213,11 +8184,13 @@ var mosseFilterResponses = function() {
         }
 
         if (leftHeight === 0 || rightHeight === 0){
-          console.log("an eye patch had zero height");
+          console.log('an eye patch had zero height');
           return null;
         }
 
         var eyeObjs = {};
+        eyeObjs.positions = positions;
+
         var leftImageData = imageCanvas.getContext('2d').getImageData(leftOriginX, leftOriginY, leftWidth, leftHeight);
         eyeObjs.left = {
             patch: leftImageData,
@@ -8236,21 +8209,26 @@ var mosseFilterResponses = function() {
             height: rightHeight
         };
 
-        eyeObjs.positions = positions;
-
         return eyeObjs;
     };
+
+    /**
+     * Reset the tracker to default values
+     */
+    ClmGaze.prototype.reset = function(){
+        this.clm.reset();
+    }
 
     /**
      * The Js_objectdetectGaze object name
      * @type {string}
      */
     ClmGaze.prototype.name = 'clmtrackr';
-    
+
 }(window));
 
 (function(window) {
-    "use strict";
+    'use strict';
 
     window.webgazer = window.webgazer || {};
     webgazer.tracker = webgazer.tracker || {};
@@ -8272,7 +8250,7 @@ var mosseFilterResponses = function() {
      */
     TrackingjsGaze.prototype.getEyePatches = function(imageCanvas, width, height) {
 
-        if (imageCanvas.width == 0) {
+        if (imageCanvas.width === 0) {
             return null;
         }
 
@@ -8287,11 +8265,11 @@ var mosseFilterResponses = function() {
         var offsetY = 0;
 
         //if face has been detected
-        if (face.length>0 && !isNaN(face[0]) && !isNaN(face[1]) && !isNaN(face[2]) && !isNaN(face[3])){
+        if (face.length > 0 && !isNaN(face[0]) && !isNaN(face[1]) && !isNaN(face[2]) && !isNaN(face[3])){
             //working image is restricted on upper half of detected face
             workingImage = imageCanvas.getContext('2d').getImageData(Math.floor(face[0]), Math.floor(face[1]), Math.floor(face[2]), Math.floor(face[3]/2));
             width = Math.floor(face[2]);
-            height = Math.floor(face[3]/2);
+            height = Math.floor(face[3] / 2);
             //offset from detected face
             offsetX = Math.floor(face[0]);
             offsetY = Math.floor(face[1]);  
@@ -8299,7 +8277,7 @@ var mosseFilterResponses = function() {
 
         var eyes = this.detectEyes(workingImage, width, height);
         console.log(eyes);
-        if (eyes == null){
+        if (eyes === null){
             return null;
         }
 
@@ -8307,8 +8285,8 @@ var mosseFilterResponses = function() {
         var leftImageData = imageCanvas.getContext('2d').getImageData(Math.floor(eyes[0][0])+offsetX, Math.floor(eyes[0][1])+offsetY, Math.floor(eyes[0][2]), Math.floor(eyes[0][3]));
         eyeObjs.left = {
             patch: leftImageData,
-            imagex: eyes[0][0]+offsetX,
-            imagey: eyes[0][1]+offsetY,
+            imagex: eyes[0][0] + offsetX,
+            imagey: eyes[0][1] + offsetY,
             width: eyes[0][2],
             height: eyes[0][3]
         };
@@ -8322,7 +8300,7 @@ var mosseFilterResponses = function() {
             height: eyes[1][3]        
         };
       
-        if (leftImageData.width == 0 || rightImageData.width == 0) {
+        if (leftImageData.width === 0 || rightImageData.width === 0) {
             console.log('an eye patch had zero width');
             return null;
         }
@@ -8413,6 +8391,13 @@ var mosseFilterResponses = function() {
     };
 
     /**
+     * Reset the tracker to default values
+     */
+    TrackingjsGaze.prototype.reset = function(){
+        console.log( "Unimplemented; Tracking.js has no obvious reset function" );
+    }
+
+    /**
      * The TrackingjsGaze object name
      * @type {string}
      */
@@ -8421,7 +8406,7 @@ var mosseFilterResponses = function() {
 }(window));
 
 (function(window) {
-    "use strict";
+    'use strict';
 
     window.webgazer = window.webgazer || {};
     webgazer.tracker = webgazer.tracker || {};
@@ -8443,7 +8428,7 @@ var mosseFilterResponses = function() {
      */
     Js_objectdetectGaze.prototype.getEyePatches = function(imageCanvas, width, height) {
 
-        if (imageCanvas.width == 0) {
+        if (imageCanvas.width === 0) {
             return null;
         }
 
@@ -8458,7 +8443,7 @@ var mosseFilterResponses = function() {
         var offsetY = 0;
 
         //if face has been detected
-        if (face.length>0 && !isNaN(face[0]) && !isNaN(face[1]) && !isNaN(face[2]) && !isNaN(face[3])){
+        if (face.length > 0 && !isNaN(face[0]) && !isNaN(face[1]) && !isNaN(face[2]) && !isNaN(face[3])){
             //working image is restricted on upper half of detected face
             workingImage = imageCanvas.getContext('2d').getImageData(Math.floor(face[0]), Math.floor(face[1]), Math.floor(face[2]), Math.floor(face[3]/2));
             width = Math.floor(face[2]);
@@ -8469,7 +8454,7 @@ var mosseFilterResponses = function() {
         }
 
         var eyes = this.detectEyes(workingImage, width, height);
-        if (eyes == null){
+        if (eyes === null){
             return null;
         }
 
@@ -8477,8 +8462,8 @@ var mosseFilterResponses = function() {
         var leftImageData = imageCanvas.getContext('2d').getImageData(Math.floor(eyes[0][0])+offsetX, Math.floor(eyes[0][1])+offsetY, Math.floor(eyes[0][2]), Math.floor(eyes[0][3]));
         eyeObjs.left = {
             patch: leftImageData,
-            imagex: eyes[0][0]+offsetX,
-            imagey: eyes[0][1]+offsetY,
+            imagex: eyes[0][0] + offsetX,
+            imagey: eyes[0][1] + offsetY,
             width: eyes[0][2],
             height: eyes[0][3]
         };
@@ -8492,7 +8477,7 @@ var mosseFilterResponses = function() {
             height: eyes[1][3]        
         };
       
-        if (leftImageData.width == 0 || rightImageData.width == 0) {
+        if (leftImageData.width === 0 || rightImageData.width === 0) {
             console.log('an eye patch had zero width');
             return null;
         }
@@ -8614,7 +8599,7 @@ var mosseFilterResponses = function() {
           }
         }
 
-        var map ={};
+        var map = {};
         for (var k = 0; k < disjointSet.length; k++){
           var rep = disjointSet.find(k);
           if (!map[rep]){
@@ -8643,6 +8628,13 @@ var mosseFilterResponses = function() {
     };
     
     /**
+     * Reset the tracker to default values
+     */
+    Js_objectdetectGaze.prototype.reset = function(){
+        console.log( "Unimplemented; js_objectdetect.js has no obvious reset function" );
+    }
+
+    /**
      * The Js_objectdetectGaze object name
      * @type {string}
      */
@@ -8650,6 +8642,7 @@ var mosseFilterResponses = function() {
 
 }(window));
 
+'use strict';
 (function(window) {
     
     window.webgazer = window.webgazer || {};
@@ -8763,14 +8756,14 @@ var mosseFilterResponses = function() {
 }(window));
 
 (function() {
-    "use strict";
+    'use strict';
 
     self.webgazer = self.webgazer || {};
     self.webgazer.mat = self.webgazer.mat || {};
 
     /**
      * Transposes an mxn array
-     * @param {Array.<Array.<Number>>} matrix - of "M x N" dimensionality
+     * @param {Array.<Array.<Number>>} matrix - of 'M x N' dimensionality
      * @return {Array.<Array.<Number>>} transposed matrix
      */
     self.webgazer.mat.transpose = function(matrix){
@@ -8843,7 +8836,7 @@ var mosseFilterResponses = function() {
     self.webgazer.mat.mult = function(matrix1, matrix2){
 
         if (matrix2.length != matrix1[0].length){
-            console.log("Matrix inner dimensions must agree.");
+            console.log('Matrix inner dimensions must agree.');
         }
 
         var X = new Array(matrix1.length),
@@ -8938,11 +8931,11 @@ var mosseFilterResponses = function() {
             }
         }
         if (B.length != m){
-            console.log("Matrix row dimensions must agree.");
+            console.log('Matrix row dimensions must agree.');
         }
         for (var j = 0; j < n; j++){
-            if (LU[j][j] == 0){
-                console.log("Matrix is singular.")
+            if (LU[j][j] === 0){
+                console.log('Matrix is singular.')
             }
         }
         var nx = B[0].length;
@@ -9022,11 +9015,11 @@ var mosseFilterResponses = function() {
             Rdiag[k] = -nrm;
         }
         if (B.length != m){
-            console.log("Matrix row dimensions must agree.");
+            console.log('Matrix row dimensions must agree.');
         }
         for (var j = 0; j < n; j++){
-            if (Rdiag[j] == 0)
-                console.log("Matrix is rank deficient");
+            if (Rdiag[j] === 0)
+                console.log('Matrix is rank deficient');
         }
         // Copy right hand side
         var nx = B[0].length;
@@ -9068,11 +9061,12 @@ var mosseFilterResponses = function() {
     
 }());
 
+'use strict';
 (function(window) {
 
     window.webgazer = window.webgazer || {};
     webgazer.pupil = webgazer.pupil || {};
-    
+
     /**
      * Returns intensity value at x,y position of a pixels image
      * @param {Array} pixels - array of size width*height
@@ -9084,7 +9078,7 @@ var mosseFilterResponses = function() {
     var getValue = function (pixels, x, y, width){
         return pixels[y * width + x];
     };
-    
+
     /**
      * Computes summation area table/integral image of a pixel matrix
      * @param {Array} pixels value of eye area
@@ -9096,18 +9090,18 @@ var mosseFilterResponses = function() {
         var integralImage = new Array(width);
         var sumx = 0;
         var sumy = 0;
-    
+
         for (var i = 0; i < width; i++){
             integralImage[i] = new Array(height);
             sumx += getValue(pixels, i, 0, width);
             integralImage[i][0] = sumx;
         }
-    
+
         for (var i = 0; i < height; i++){
             sumy += getValue(pixels, 0, i, width);
             integralImage[0][i] = sumy;
         }
-    
+
         for (var x = 1; x < width; x++){
             for (var y = 1; y < height; y++){
                 integralImage[x][y] = getValue(pixels, x, y, width) + integralImage[x - 1][y] + integralImage[x][y - 1] - integralImage[x - 1][y - 1];
@@ -9115,7 +9109,7 @@ var mosseFilterResponses = function() {
         }
         return integralImage;
     };
-    
+
     /**
      * Detects a pupil in a set of pixels
      * @param  {Array} pixels - patch of pixels to look for pupil into
@@ -9134,13 +9128,13 @@ var mosseFilterResponses = function() {
             //think of a sliding rectangular window of width halfWidth*2 that goes through the whole eye pixel matrix and does the following:
             //1) computes the irisArea, which is the total intensity of the iris
             //2) computes the scleraIrisArea, which is multiple rows of pixels including the sclera and iris.
-            //3) computes avg, which is the intensity of the area divided by the number of pixels.               
+            //3) computes avg, which is the intensity of the area divided by the number of pixels.
             //start at the bottom right of the rectangle!not top left
             for (var x = halfWidth; x < width - offset; x++){
                 for (var y = halfWidth; y < height - offset; y++){
                     //evaluate area by the formula found on wikipedia about the summed area table: I(D)+I(A)-I(B)-I(C)
                     var irisArea = summedAreaTable[x + offset][y + offset] + summedAreaTable[x + offset - halfWidth][y + offset - halfWidth] - summedAreaTable[x + offset][y + offset - halfWidth] - summedAreaTable[x + offset - halfWidth][y + offset];
-                    var avgScore = 1.0 * irisArea / ((halfWidth + 1) * (halfWidth + 1)) + 1; 
+                    var avgScore = 1.0 * irisArea / ((halfWidth + 1) * (halfWidth + 1)) + 1;
                     //summation area table again
                     var scleraIrisArea = ((1.0 * summedAreaTable[width - 1 - offset][y + offset] + summedAreaTable[0 + offset][y + offset - halfWidth] - summedAreaTable[0 + offset][y + offset] - summedAreaTable[width - 1 - offset][y + offset - halfWidth]) - irisArea);
                     //minimize avgScore/scleraIrisArea. 150 is too high, might have to change since it's closer to white
@@ -9154,7 +9148,7 @@ var mosseFilterResponses = function() {
         }
         return [bestPoint, bestHalfWidth];
     };
-    
+
     /**
      * Given an object with two eye patches it finds the location of the detected pupils
      * @param  {Object} eyesObj - left and right detected eye patches
@@ -9165,18 +9159,18 @@ var mosseFilterResponses = function() {
             return eyesObj;
         }
         if (!eyesObj.left.blink) {
-            eyesObj.left.pupil = getSinglePupil(Array.prototype.slice.call(webgazer.util.grayscale(eyesObj.left.patch, eyesObj.left.width, eyesObj.left.height)), eyesObj.left.width, eyesObj.left.height);
+            eyesObj.left.pupil = getSinglePupil(Array.prototype.slice.call(webgazer.util.grayscale(eyesObj.left.patch.data, eyesObj.left.width, eyesObj.left.height)), eyesObj.left.width, eyesObj.left.height);
             eyesObj.left.pupil[0][0] -= eyesObj.left.pupil[1];
             eyesObj.left.pupil[0][1] -= eyesObj.left.pupil[1];
         }
         if (!eyesObj.right.blink) {
-            eyesObj.right.pupil = getSinglePupil(Array.prototype.slice.call(webgazer.util.grayscale(eyesObj.right.patch, eyesObj.right.width, eyesObj.right.height)), eyesObj.right.width, eyesObj.right.height);
+            eyesObj.right.pupil = getSinglePupil(Array.prototype.slice.call(webgazer.util.grayscale(eyesObj.right.patch.data, eyesObj.right.width, eyesObj.right.height)), eyesObj.right.width, eyesObj.right.height);
             eyesObj.right.pupil[0][0] -= eyesObj.right.pupil[1];
             eyesObj.right.pupil[0][1] -= eyesObj.right.pupil[1];
         }
         return eyesObj;
     }
-        
+
 }(window));
 
 /**
@@ -9350,7 +9344,7 @@ var mosseFilterResponses = function() {
             },
             
             polynomial: function(data, order) {
-                if(typeof order == 'undefined'){
+                if(typeof order === 'undefined'){
                     order = 2;
                 }
                  var lhs = [], rhs = [], results = [], a = 0, b = 0, i = 0, k = order + 1;
@@ -9389,7 +9383,7 @@ var mosseFilterResponses = function() {
 
                     for(var i = equation.length-1; i >= 0; i--){
                       if(i > 1) string += Math.round(equation[i] * Math.pow(10, i)) / Math.pow(10, i)  + 'x^' + i + ' + ';
-                      else if (i == 1) string += Math.round(equation[i]*100) / 100 + 'x' + ' + ';
+                      else if (i === 1) string += Math.round(equation[i]*100) / 100 + 'x' + ' + ';
                       else string += Math.round(equation[i]*100) / 100;
                     }
 
@@ -9415,7 +9409,7 @@ var mosseFilterResponses = function() {
 
     var regression = (function(method, data, order) {
 
-           if (typeof method == 'string') {
+           if (typeof method === 'string') {
                return methods[method](data, order);
            }
         });
@@ -9428,6 +9422,7 @@ var mosseFilterResponses = function() {
 
 }());
 
+'use strict';
 (function(window) {
 
     window.webgazer = window.webgazer || {};
@@ -9468,11 +9463,11 @@ var mosseFilterResponses = function() {
                 m_Coefficients[i] = bb[i][0];
             }
             try{
-                var n = (m_Coefficients.length != 0 ? m_Coefficients.length/m_Coefficients.length: 0);
-                if (m_Coefficients.length*n != m_Coefficients.length){
-                    console.log("Array length must be a multiple of m")
+                var n = (m_Coefficients.length !== 0 ? m_Coefficients.length/m_Coefficients.length: 0);
+                if (m_Coefficients.length*n !== m_Coefficients.length){
+                    console.log('Array length must be a multiple of m')
                 }
-                solution = (ss.length == ss[0].length ? (numeric.LUsolve(numeric.LU(ss,true),bb)) : (webgazer.mat.QRDecomposition(ss,bb)));
+                solution = (ss.length === ss[0].length ? (numeric.LUsolve(numeric.LU(ss,true),bb)) : (webgazer.mat.QRDecomposition(ss,bb)));
 
                 for (var i = 0; i < nc; i++){
                     m_Coefficients[i] = solution[i];
@@ -9581,8 +9576,12 @@ var mosseFilterResponses = function() {
             this.dataTrail.push({'eyes':eyes, 'screenPos':screenPos, 'type':type});
         }
 
-        eyes.left.patch = Array.from(eyes.left.patch.data);
-        eyes.right.patch = Array.from(eyes.right.patch.data);
+        // [20180730 JT] Why do we do this? It doesn't return anything...
+        // But as JS is pass by reference, it still affects it.
+        //
+        // Causes problems for when we want to call 'addData' twice in a row on the same object, but perhaps with different screenPos or types (think multiple interactions within one video frame)
+        //eyes.left.patch = Array.from(eyes.left.patch.data);
+        //eyes.right.patch = Array.from(eyes.right.patch.data);
     }
 
     /**
@@ -9592,7 +9591,7 @@ var mosseFilterResponses = function() {
      * @returns {Object}
      */
     webgazer.reg.RidgeReg.prototype.predict = function(eyesObj) {
-        if (!eyesObj || this.eyeFeaturesClicks.length == 0) {
+        if (!eyesObj || this.eyeFeaturesClicks.length === 0) {
             return null;
         }
         var acceptTime = performance.now() - this.trailTime;
@@ -9663,6 +9662,7 @@ var mosseFilterResponses = function() {
     
 }(window));
 
+'use strict';
 (function(window) {
 
     window.webgazer = window.webgazer || {};
@@ -9703,11 +9703,11 @@ var mosseFilterResponses = function() {
                 m_Coefficients[i] = bb[i][0];
             }
             try{
-                var n = (m_Coefficients.length != 0 ? m_Coefficients.length/m_Coefficients.length: 0);
-                if (m_Coefficients.length*n != m_Coefficients.length){
-                    console.log("Array length must be a multiple of m")
+                var n = (m_Coefficients.length !== 0 ? m_Coefficients.length/m_Coefficients.length: 0);
+                if (m_Coefficients.length*n !== m_Coefficients.length){
+                    console.log('Array length must be a multiple of m')
                 }
-                solution = (ss.length == ss[0].length ? (numeric.LUsolve(numeric.LU(ss,true),bb)) : (webgazer.mat.QRDecomposition(ss,bb)));
+                solution = (ss.length === ss[0].length ? (numeric.LUsolve(numeric.LU(ss,true),bb)) : (webgazer.mat.QRDecomposition(ss,bb)));
 
                 for (var i = 0; i < nc; i++){
                     m_Coefficients[i] = solution[i];
@@ -9815,8 +9815,12 @@ var mosseFilterResponses = function() {
             this.dataTrail.push({'eyes':eyes, 'screenPos':screenPos, 'type':type});
         }
 
-        eyes.left.patch = Array.from(eyes.left.patch.data);
-        eyes.right.patch = Array.from(eyes.right.patch.data);
+        // [20180730 JT] Why do we do this? It doesn't return anything...
+        // But as JS is pass by reference, it still affects it.
+        //
+        // Causes problems for when we want to call 'addData' twice in a row on the same object, but perhaps with different screenPos or types (think multiple interactions within one video frame)
+        //eyes.left.patch = Array.from(eyes.left.patch.data);
+        //eyes.right.patch = Array.from(eyes.right.patch.data);
     };
 
     /**
@@ -9826,7 +9830,7 @@ var mosseFilterResponses = function() {
      * @returns {Object}
      */
     webgazer.reg.RidgeWeightedReg.prototype.predict = function(eyesObj) {
-        if (!eyesObj || this.eyeFeaturesClicks.length == 0) {
+        if (!eyesObj || this.eyeFeaturesClicks.length === 0) {
             return null;
         }
         var acceptTime = performance.now() - this.trailTime;
@@ -9851,7 +9855,7 @@ var mosseFilterResponses = function() {
             var trueIndex = this.eyeFeaturesClicks.getTrueIndex(i);
             for (var j = 0; j < this.eyeFeaturesClicks.data[trueIndex].length; j++) {
                 var val = this.eyeFeaturesClicks.data[trueIndex][j] * weight;
-                if (weightedEyeFeats[trueIndex] != undefined){
+                if (weightedEyeFeats[trueIndex] !== undefined){
                     weightedEyeFeats[trueIndex].push(val);
                 } else {
                     weightedEyeFeats[trueIndex] = [val];
@@ -9921,6 +9925,7 @@ var mosseFilterResponses = function() {
     
 }(window));
 
+'use strict';
 (function(window) {
 
     window.webgazer = window.webgazer || {};
@@ -10007,7 +10012,7 @@ var mosseFilterResponses = function() {
      * @returns {Object}
      */
     webgazer.reg.RidgeRegThreaded.prototype.predict = function(eyesObj) {
-        console.log("LOGGING..");
+        console.log('LOGGING..');
         if (!eyesObj) {
             return null;
         }
@@ -10024,7 +10029,7 @@ var mosseFilterResponses = function() {
         predictedX = Math.floor(predictedX);
         predictedY = Math.floor(predictedY);
 
-        console.log("PredicedX");
+        console.log('PredicedX');
         console.log(predictedX);
         console.log(predictedY);
 
@@ -10064,12 +10069,13 @@ var mosseFilterResponses = function() {
     
 }(window));
 
+'use strict';
 (function() {
 
     self.webgazer = self.webgazer || {};
     self.webgazer.util = self.webgazer.util || {};
     self.webgazer.mat = self.webgazer.mat || {};
-    
+
     /**
      * Eye class, represents an eye patch detected in the video stream
      * @param {ImageData} patch - the image data corresponding to an eye
@@ -10085,8 +10091,8 @@ var mosseFilterResponses = function() {
         this.width = width;
         this.height = height;
     };
-    
-    
+
+
     //Data Window class
     //operates like an array but 'wraps' data around to keep the array at a fixed windowSize
     /**
@@ -10160,10 +10166,10 @@ var mosseFilterResponses = function() {
     //Helper functions
     /**
      * Grayscales an image patch. Can be used for the whole canvas, detected face, detected eye, etc.
-     * @param  {ImageData} imageData - image data to be grayscaled
+     * @param  {Array} imageData - image data to be grayscaled
      * @param  {Number} imageWidth  - width of image data to be grayscaled
      * @param  {Number} imageHeight - height of image data to be grayscaled
-     * @return {ImageData} grayscaledImage
+     * @return {Array} grayscaledImage
      */
     self.webgazer.util.grayscale = function(imageData, imageWidth, imageHeight){
         //TODO implement ourselves to remove dependency
@@ -10172,13 +10178,31 @@ var mosseFilterResponses = function() {
 
     /**
      * Increase contrast of an image
-     * @param {ImageData} grayscaleImageSrc - grayscale integer array
+     * @param {Array} grayscaleImageSrc - grayscale integer array
      * @param {Number} step - sampling rate, control performance
      * @param {Array} destinationImage - array to hold the resulting image
      */
     self.webgazer.util.equalizeHistogram = function(grayscaleImageSrc, step, destinationImage) {
         //TODO implement ourselves to remove dependency
         return objectdetect.equalizeHistogram(grayscaleImageSrc, step, destinationImage);
+    };
+
+    self.webgazer.util.threshold = function(data, threshold) {
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (data[i] > threshold) ? 255 : 0;
+      }
+      return data;
+    };
+
+    self.webgazer.util.correlation = function(data1, data2) {
+      const length = Math.min(data1.length, data2.length);
+      let count = 0;
+      for (let i = 0; i < length; i++) {
+        if (data1[i] === data2[i]) {
+          count++;
+        }
+      }
+      return count / Math.max(data1.length, data2.length);
     };
 
     /**
@@ -10206,7 +10230,7 @@ var mosseFilterResponses = function() {
 
         return tempCanvas.getContext('2d').getImageData(0, 0, resizeWidth, resizeHeight);
     };
-    
+
     /**
      * Checks if the prediction is within the boundaries of the viewport and constrains it
      * @param  {Array} prediction [x,y] - predicted gaze coordinates
@@ -10341,7 +10365,7 @@ var mosseFilterResponses = function() {
         this.P = P_initial; //Initial covariance matrix
         this.X = X_initial; //Initial guess of measurement
     };
-    
+
     /**
      * Get Kalman next filtered value and update the internal state
      * @param {Array} z - the new measurement
@@ -10375,19 +10399,36 @@ var mosseFilterResponses = function() {
       this.X = add(X_p, mult(K, y));
       this.P = mult(sub(identity(K.length), mult(K,this.H)), P_p);
       return transpose(mult(this.H, this.X))[0]; //Transforms the predicted state back into it's measurement form
-    }
+    };
 
 }());
+
+/*
+ * Initialises variables used to store accuracy eigenValues
+ * This is used by the calibration example file
+ */
+var store_points_var = false;
+var xPast50 = new Array(50);
+var yPast50 = new Array(50);
+
+/*
+ * Stores the position of the fifty most recent tracker preditions
+ */
+function store_points(x, y, k) {
+  xPast50[k] = x;
+  yPast50[k] = y;
+}
 
 (function(window, undefined) {
     console.log('initializing webgazer');
     //strict mode for type safety
-    "use strict";
+    'use strict';
 
     //auto invoke function to bind our own copy of window and undefined
 
     //set up namespaces for modules
     window.webgazer = window.webgazer || {};
+    webgazer = webgazer || {};
     webgazer.tracker = webgazer.tracker || {};
     webgazer.reg = webgazer.reg || {};
     webgazer.params = webgazer.params || {};
@@ -10395,39 +10436,44 @@ var mosseFilterResponses = function() {
     //PRIVATE VARIABLES
 
     //video elements
-    webgazer.params.videoScale = 1;
+    var videoStream = null;
     var videoElement = null;
     var videoElementCanvas = null;
+    var faceOverlay = null;
+    var faceFeedbackBox = null;
+    var gazeDot = null;
     webgazer.params.videoElementId = 'webgazerVideoFeed';
     webgazer.params.videoElementCanvasId = 'webgazerVideoCanvas';
-    webgazer.params.imgWidth = 1280;
-    webgazer.params.imgHeight = 720;
+    webgazer.params.faceOverlayId = 'webgazerFaceOverlay';
+    webgazer.params.faceFeedbackBoxId = 'webgazerFaceFeedbackBox';
+    webgazer.params.gazeDotId = 'webgazerGazeDot'
+    
+    webgazer.params.videoViewerWidth = 320;
+    webgazer.params.videoViewerHeight = 240;
+
+    webgazer.params.faceFeedbackBoxRatio = 0.66;
+
+    // View options
+    webgazer.params.showVideo = true;
+    webgazer.params.showFaceOverlay = true;
+    webgazer.params.showFaceFeedbackBox = true;
+    webgazer.params.showGazeDot = false;
 
     //Params to clmtrackr and getUserMedia constraints
     webgazer.params.clmParams = webgazer.params.clmParams || {useWebGL : true};
-    webgazer.params.camConstraints = webgazer.params.camConstraints || { video:true };
+    webgazer.params.camConstraints = webgazer.params.camConstraints || { video: { width: { min: 320, ideal: 640, max: 1920 }, height: { min: 240, ideal: 480, max: 1080 }, facingMode: "user" } };
 
-    //DEBUG variables
-    //debug control boolean
-    var showGazeDot = false;
-    //debug element (starts offscreen)
-    var gazeDot = document.createElement('div');
-    gazeDot.style.position = 'fixed';
-    gazeDot.style.zIndex = 99999;
-    gazeDot.style.left = '-5px'; //'-999em';
-    gazeDot.style.top  = '-5px';
-    gazeDot.style.width = '10px';
-    gazeDot.style.height = '10px';
-    gazeDot.style.background = 'red';
-    gazeDot.style.display = 'none';
-    gazeDot.style.borderRadius = '100%';
-    gazeDot.style.opacity = '0.7';
+    webgazer.params.smoothEyeBB = webgazer.params.smoothEyeBB || false;
+    webgazer.params.blinkDetectionOn = webgazer.params.blinkDetectionOn || false;
 
+    // Why is this not in webgazer.params ?
     var debugVideoLoc = '';
 
     // loop parameters
     var clockStart = performance.now();
     webgazer.params.dataTimestep = 50;
+    var latestEyeFeatures = null;
+    var latestGazeData = null;
     var paused = false;
     //registered callback for loop
     var nopCallback = function(data, time) {};
@@ -10436,7 +10482,7 @@ var mosseFilterResponses = function() {
     //Types that regression systems should handle
     //Describes the source of data so that regression systems may ignore or handle differently the various generating events
     var eventTypes = ['click', 'move'];
-    
+
     //movelistener timeout clock parameters
     var moveClock = performance.now();
     webgazer.params.moveTickSize = 50; //milliseconds
@@ -10469,8 +10515,119 @@ var mosseFilterResponses = function() {
         'settings': {}
     };
 
-    
+
     //PRIVATE FUNCTIONS
+
+    /**
+     * Computes the size of the face overlay validation box depending on the size of the video preview window.
+     * @returns {Object} The dimensions of the validation box as top, left, width, height.
+     */
+    webgazer.computeValidationBoxSize = function() {
+        
+        var vw = videoElement.videoWidth;
+        var vh = videoElement.videoHeight;
+        var pw = parseInt(videoElement.style.width);
+        var ph = parseInt(videoElement.style.height);
+
+        // Find the size of the box.
+        // Pick the smaller of the two video preview sizes
+        smaller = Math.min( vw, vh );
+        larger  = Math.max( vw, vh );
+
+        // Overall scalar
+        scalar = ( vw == larger ? pw / vw : ph / vh );
+
+        // Multiply this by 2/3, then adjust it to the size of the preview
+        boxSize = (smaller * webgazer.params.faceFeedbackBoxRatio) * scalar;
+
+        // Set the boundaries of the face overlay validation box based on the preview
+        topVal = (ph - boxSize)/2;
+        leftVal = (pw - boxSize)/2;
+
+        // top, left, width, height
+        return [topVal, leftVal, boxSize, boxSize]
+    }
+
+    /**
+    * Checks if the pupils are in the position box on the video
+    * // TODO These are all wrong. The latestEyeFeatures will be in 'video' space not 'preview' space, and so need to be converted.
+    */
+    function checkEyesInValidationBox() {
+
+        if (faceFeedbackBox != null && latestEyeFeatures) {
+            var w = videoElement.videoWidth;
+            var h = videoElement.videoHeight;
+            
+            // Find the size of the box.
+            // Pick the smaller of the two video preview sizes
+            var smaller = Math.min( w, h );
+            var boxSize = smaller * webgazer.params.faceFeedbackBoxRatio;
+        
+            // Set the boundaries of the face overlay validation box based on the preview
+            var topBound = (h - boxSize)/2;
+            var leftBound = (w - boxSize)/2;
+            var rightBound = leftBound + boxSize;
+            var bottomBound = topBound + boxSize;
+
+            //get the x and y positions of the left and right eyes
+   			var eyeLX = latestEyeFeatures.left.imagex;
+			var eyeLY = latestEyeFeatures.left.imagey;
+   			var eyeRX = latestEyeFeatures.right.imagex;
+   			var eyeRY = latestEyeFeatures.right.imagey;
+
+            
+            var xPositions = false;
+            var yPositions = false;
+            
+            //check if the x values for the left and right eye are within the
+            //validation box
+            if (eyeLX > leftBound && eyeLX < rightBound) {
+               if (eyeRX > leftBound && eyeRX < rightBound) {
+                   xPositions = true;
+               }
+            }
+
+            //check if the y values for the left and right eye are within the
+            //validation box
+            if (eyeLY > topBound && eyeLY < bottomBound) {
+                if (eyeRY > topBound && eyeRY < bottomBound) {
+                    yPositions = true;
+                }
+            }
+
+            //if the x and y values for both the left and right eye are within
+            //the validation box then the box border turns green, otherwise if
+            //the eyes are outside of the box the colour is red
+            if (xPositions && yPositions){
+                faceFeedbackBox.style.border = 'solid green';
+            } else {
+                faceFeedbackBox.style.border = 'solid red';
+            }
+        }
+        else
+            faceFeedbackBox.style.border = 'solid black';
+    }
+
+    /**
+    * Alerts the user of the cursor position, used for debugging & testing
+    */
+    function checkCursor(){ //used to test
+      alert("Cursor at: " + cursorX + ", " + cursorY);
+    }
+
+    /**
+    * This draws the point (x,y) onto the canvas in the HTML
+    * @param {colour} colour - The colour of the circle to plot
+    * @param {x} x - The x co-ordinate of the desired point to plot
+    * @param {y} y - The y co-ordinate of the desired point to plot
+    */
+    function drawCoordinates(colour,x,y){
+        var ctx = document.getElementById("plotting_canvas").getContext('2d');
+        ctx.fillStyle = colour; // Red color
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2, true);
+        ctx.fill();
+    }
 
     /**
      * Gets the pupil features by following the pipeline which threads an eyes object through each call:
@@ -10483,7 +10640,6 @@ var mosseFilterResponses = function() {
         if (!canvas) {
             return;
         }
-        paintCurrentFrame(canvas, width, height);
         try {
             return blinkDetector.detectBlink(curTracker.getEyePatches(canvas, width, height));
         } catch(err) {
@@ -10499,8 +10655,6 @@ var mosseFilterResponses = function() {
      * @param {Number} height - the new height of the canvas
      */
     function paintCurrentFrame(canvas, width, height) {
-        //imgWidth = videoElement.videoWidth * videoScale;
-        //imgHeight = videoElement.videoHeight * videoScale;
         if (canvas.width != width) {
             canvas.width = width;
         }
@@ -10514,28 +10668,31 @@ var mosseFilterResponses = function() {
 
     /**
      * Paints the video to a canvas and runs the prediction pipeline to get a prediction
-     * @param {Number|undefined} regModelIndex - The prediction index where looking for
+     * @param {Number|undefined} regModelIndex - The prediction index we're looking for
      * @returns {*}
      */
     function getPrediction(regModelIndex) {
         var predictions = [];
-        var features = getPupilFeatures(videoElementCanvas, webgazer.params.imgWidth, webgazer.params.imgHeight);
-        if (regs.length == 0) {
+        latestEyeFeatures = getPupilFeatures(videoElementCanvas, videoElementCanvas.width, videoElementCanvas.height);
+
+        if (regs.length === 0) {
             console.log('regression not set, call setRegression()');
             return null;
         }
         for (var reg in regs) {
-            predictions.push(regs[reg].predict(features));
+            predictions.push(regs[reg].predict(latestEyeFeatures));
         }
         if (regModelIndex !== undefined) {
-            return predictions[regModelIndex] == null ? null : {
+            return predictions[regModelIndex] === null ? null : {
                 'x' : predictions[regModelIndex].x,
-                'y' : predictions[regModelIndex].y
+                'y' : predictions[regModelIndex].y,
+                'eyeFeatures': latestEyeFeatures
             };
         } else {
-            return predictions.length == 0 || predictions[0] == null ? null : {
+            return predictions.length === 0 || predictions[0] === null ? null : {
                 'x' : predictions[0].x,
                 'y' : predictions[0].y,
+                'eyeFeatures': latestEyeFeatures,
                 'all' : predictions
             };
         }
@@ -10545,27 +10702,66 @@ var mosseFilterResponses = function() {
      * Runs every available animation frame if webgazer is not paused
      */
     var smoothingVals = new webgazer.util.DataWindow(4);
+    var k = 0;
+
     function loop() {
-        var gazeData = getPrediction();
-        var elapsedTime = performance.now() - clockStart;
-
-        callback(gazeData, elapsedTime);
-
-        if (gazeData && showGazeDot) {
-            smoothingVals.push(gazeData);
-            var x = 0;
-            var y = 0;
-            var len = smoothingVals.length;
-            for (var d in smoothingVals.data) {
-                x += smoothingVals.get(d).x;
-                y += smoothingVals.get(d).y;
-            }
-            var pred = webgazer.util.bound({'x':x/len, 'y':y/len});
-            gazeDot.style.transform = 'translate3d(' + pred.x + 'px,' + pred.y + 'px,0)';
-        }
 
         if (!paused) {
-            //setTimeout(loop, webgazer.params.dataTimestep);
+
+            // Paint the latest video frame into the canvas which will be analyzed by WebGazer
+            // [20180729 JT] Why do we need to do this? clmTracker does this itself _already_, which is just duplicating the work.
+            // Is it because other trackers need a canvas instead of an img/video element?
+            paintCurrentFrame(videoElementCanvas, videoElementCanvas.width, videoElementCanvas.height);
+            
+            // Get gaze prediction (ask clm to track; pass the data to the regressor; get back a prediction)
+            latestGazeData = getPrediction();
+            // Count time
+            var elapsedTime = performance.now() - clockStart;
+            // [20180611 James Tompkin]: What does this line do?
+            callback(latestGazeData, elapsedTime);
+
+            // Draw face overlay
+            if( webgazer.params.showFaceOverlay )
+            {
+                // Draw the face overlay
+                faceOverlay.getContext('2d').clearRect( 0, 0, videoElement.videoWidth, videoElement.videoHeight);
+                var cl = webgazer.getTracker().clm;
+                if( cl.getCurrentPosition() ) {
+                    cl.draw(faceOverlay);
+                }
+            }
+
+            // Feedback box
+            // Check that the eyes are inside of the validation box
+            if( webgazer.params.showFaceFeedbackBox )
+                checkEyesInValidationBox();
+
+
+            if( latestGazeData ) {
+
+                smoothingVals.push(latestGazeData);
+                var x = 0;
+                var y = 0;
+                var len = smoothingVals.length;
+                for (var d in smoothingVals.data) {
+                    x += smoothingVals.get(d).x;
+                    y += smoothingVals.get(d).y;
+                }
+                var pred = webgazer.util.bound({'x':x/len, 'y':y/len});
+
+                if (store_points_var) {
+                    drawCoordinates('blue',pred.x,pred.y); //draws the previous predictions
+                    //store the position of the past fifty occuring tracker preditions
+                    store_points(pred.x, pred.y, k);
+                    k++;
+                    if (k == 50) {
+                        k = 0;
+                    }
+                }
+                // GazeDot
+                gazeDot.style.transform = 'translate3d(' + pred.x + 'px,' + pred.y + 'px,0)';
+            }
+
             requestAnimationFrame(loop);
         }
     }
@@ -10582,13 +10778,13 @@ var mosseFilterResponses = function() {
         if (paused) {
             return;
         }
-        var features = getPupilFeatures(videoElementCanvas, webgazer.params.imgWidth, webgazer.params.imgHeight);
-        if (regs.length == 0) {
+        if (regs.length === 0) {
             console.log('regression not set, call setRegression()');
             return null;
         }
         for (var reg in regs) {
-            regs[reg].addData(features, [x, y], eventType);
+            if( latestEyeFeatures )
+                regs[reg].addData(latestEyeFeatures, [x, y], eventType);
         }
     };
 
@@ -10675,37 +10871,123 @@ var mosseFilterResponses = function() {
 
     /**
      * Initializes all needed dom elements and begins the loop
-     * @param {URL} videoSrc - The video url to use
+     * @param {URL} videoStream - The video stream to use
      */
-    function init(videoSrc) {
+    function init(videoStream) {
+        //////////////////////////
+        // Video and video preview
+        //////////////////////////
+        var topDist = '0px'
+        var leftDist = '0px'
+
         videoElement = document.createElement('video');
         videoElement.id = webgazer.params.videoElementId;
+        videoElement.srcObject = videoStream; 
         videoElement.autoplay = true;
-        console.log(videoElement);
-        videoElement.style.display = 'none';
-
-        //turn the stream into a magic URL
-        videoElement.src = videoSrc;
-        document.body.appendChild(videoElement);
-
+        videoElement.style.display = webgazer.params.showVideo ? 'block' : 'none';
+        videoElement.style.position = 'fixed';
+        videoElement.style.top = topDist;
+        videoElement.style.left = leftDist;
+        // We set these to stop the video appearing too large when it is added for the very first time
+        videoElement.style.width = webgazer.params.videoViewerWidth + 'px';
+        videoElement.style.height = webgazer.params.videoViewerHeight + 'px';
+        //videoElement.style.zIndex="-1";
+        
+        // Canvas for drawing video to pass to clm tracker
         videoElementCanvas = document.createElement('canvas');
         videoElementCanvas.id = webgazer.params.videoElementCanvasId;
         videoElementCanvas.style.display = 'none';
-        document.body.appendChild(videoElementCanvas);
 
+        // Face overlay
+        // Shows the CLM tracking result
+        faceOverlay = document.createElement('canvas');
+        faceOverlay.id = webgazer.params.faceOverlayId;
+        faceOverlay.style.display = webgazer.params.showFaceOverlay ? 'block' : 'none';
+        faceOverlay.style.position = 'fixed';
+        faceOverlay.style.top = topDist;
+        faceOverlay.style.left = leftDist;
+
+        // Feedback box
+        // Lets the user know when their face is in the middle
+        faceFeedbackBox = document.createElement('canvas');
+        faceFeedbackBox.id = webgazer.params.faceFeedbackBoxId;
+        faceFeedbackBox.style.display = webgazer.params.showFaceFeedbackBox ? 'block' : 'none';
+        faceFeedbackBox.style.position = 'fixed';
+        faceFeedbackBox.style.border = 'solid';
+               
+        // Gaze dot 
+        // Starts offscreen
+        gazeDot = document.createElement('div');
+        gazeDot.id = webgazer.params.gazeDotId;
+        gazeDot.style.display = webgazer.params.showGazeDot ? 'block' : 'none';
+        gazeDot.style.position = 'fixed';
+        gazeDot.style.zIndex = 99999;
+        gazeDot.style.left = '-5px'; //'-999em';
+        gazeDot.style.top  = '-5px';
+        gazeDot.style.background = 'red';
+        gazeDot.style.borderRadius = '100%';
+        gazeDot.style.opacity = '0.7';
+        gazeDot.style.width = '10px';
+        gazeDot.style.height = '10px';
+
+
+        // Add other preview/feedback elements to the screen once the video has shown and its parameters are initialized
+        document.body.appendChild(videoElement);
+        function setupPreviewVideo(e) {
+            
+            // All video preview parts have now been added, so set the size both internally and in the preview window.
+            setInternalVideoBufferSizes( videoElement.videoWidth, videoElement.videoHeight );
+            webgazer.setVideoViewerSize( webgazer.params.videoViewerWidth, webgazer.params.videoViewerHeight );
+
+            document.body.appendChild(videoElementCanvas);
+            document.body.appendChild(faceOverlay);
+            document.body.appendChild(faceFeedbackBox);
+            document.body.appendChild(gazeDot);
+
+            // Run this only once, so remove the event listener
+            e.target.removeEventListener(e.type, setupPreviewVideo);
+        };
+        videoElement.addEventListener('timeupdate', setupPreviewVideo);
+
+        
         addMouseEventListeners();
-
-        document.body.appendChild(gazeDot);
 
         //BEGIN CALLBACK LOOP
         paused = false;
-
         clockStart = performance.now();
 
         loop();
     }
 
-    
+    /**
+     * Initializes navigator.mediaDevices.getUserMedia
+     * depending on the browser capabilities
+     */
+    function setUserMediaVariable(){
+
+      if (navigator.mediaDevices === undefined) {
+        navigator.mediaDevices = {};
+      }
+
+      if (navigator.mediaDevices.getUserMedia === undefined) {
+        navigator.mediaDevices.getUserMedia = function(constraints) {
+
+          // gets the alternative old getUserMedia is possible
+          var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+          // set an error message if browser doesn't support getUserMedia
+          if (!getUserMedia) {
+            return Promise.reject(new Error("Unfortunately, your browser does not support access to the webcam through the getUserMedia API. Try to use the latest version of Google Chrome, Mozilla Firefox, Opera, or Microsoft Edge instead."));
+          }
+
+          // uses navigator.getUserMedia for older browsers
+          return new Promise(function(resolve, reject) {
+            getUserMedia.call(navigator, constraints, resolve, reject);
+          });
+        }
+      }
+    }
+
     //PUBLIC FUNCTIONS - CONTROL
 
     /**
@@ -10715,52 +10997,51 @@ var mosseFilterResponses = function() {
      * @returns {*}
      */
     webgazer.begin = function(onFail) {
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.chrome){
+            alert("WebGazer works only over https. If you are doing local development you need to run a local server.");
+        }
+
         loadGlobalData();
 
-        onFail = onFail || function() {console.log("No stream")};
+        onFail = onFail || function() {console.log('No stream')};
 
         if (debugVideoLoc) {
             init(debugVideoLoc);
             return webgazer;
         }
 
-        //SETUP VIDEO ELEMENTS
-        navigator.getUserMedia = navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia;
+        ///////////////////////
+        // SETUP VIDEO ELEMENTS
+        // Sets .mediaDevices.getUserMedia depending on browser
+        setUserMediaVariable();
 
-        if(navigator.getUserMedia != null){
-            var options = webgazer.params.camConstraints;
-            //request webcam access
-            navigator.getUserMedia(options,
-                    function(stream){
-                        console.log('video stream created');
-                        init(window.URL.createObjectURL(stream));
-                    },
-                    function(e){
-                        onFail();
-                        videoElement = null;
-                    });
-        }
-        if (!navigator.getUserMedia) {
-            alert("Unfortunately, your browser does not support access to the webcam through the getUserMedia API. Try to use Google Chrome, Mozilla Firefox, Opera, or Microsoft Edge instead.");
-        }
-        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.chrome){
-            alert("WebGazer works only over https. If you are doing local development you need to run a local server.");
-        }
+        // Request webcam access under specific constraints
+        // WAIT for access
+        navigator.mediaDevices.getUserMedia( webgazer.params.camConstraints )
+        .then(function(stream){ // set the stream
+          videoStream = stream;
+          init(videoStream);
+        })
+        .catch(function(err) { // error handling
+          onFail();
+          console.log( err );
+          videoElement = null;
+          videoStream = null;
+        });
 
         return webgazer;
     };
 
+
     /**
      * Checks if webgazer has finished initializing after calling begin()
+     * [20180729 JT] This seems like a bad idea for how this function should be implemented.
      * @returns {boolean} if webgazer is ready
      */
     webgazer.isReady = function() {
-        if (videoElementCanvas == null) {
+        if (videoElementCanvas === null) {
             return false;
         }
-        paintCurrentFrame(videoElementCanvas, webgazer.params.imgWidth, webgazer.params.imgHeight);
         return videoElementCanvas.width > 0;
     };
 
@@ -10793,6 +11074,9 @@ var mosseFilterResponses = function() {
     webgazer.end = function() {
         //loop may run an extra time and fail due to removed elements
         paused = true;
+
+        //webgazer.stopVideo(); // uncomment if you want to stop the video from streaming
+
         //remove video element and canvas
         document.body.removeChild(videoElement);
         document.body.removeChild(videoElementCanvas);
@@ -10801,7 +11085,24 @@ var mosseFilterResponses = function() {
         return webgazer;
     };
 
-    
+    /**
+    * Stops the video camera from streaming and removes the video outlines
+    * @return {webgazer} this
+    */
+    webgazer.stopVideo = function() {
+      // Stops the video from streaming
+      videoStream.getTracks()[0].stop();
+
+      // Removes the outline of the face
+      document.body.removeChild( faceOverlay );
+
+      // Removes the box around the face
+      document.body.removeChild( faceFeedbackBox );
+      
+      return webgazer;
+    }
+
+
     //PUBLIC FUNCTIONS - DEBUG
 
     /**
@@ -10809,23 +11110,126 @@ var mosseFilterResponses = function() {
      * @return {boolean} if browser is compatible
      */
     webgazer.detectCompatibility = function() {
-        navigator.getUserMedia = navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mediaDevices.getUserMedia;
 
-        return navigator.getUserMedia !== undefined;
+      var getUserMedia = navigator.mediaDevices.getUserMedia ||
+        navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia;
+
+      return getUserMedia !== undefined;
     };
 
     /**
-     * Displays the calibration point for debugging
+     * Set whether the video preview is visible or not.
+     * @param {*} bool 
      * @return {webgazer} this
      */
-    webgazer.showPredictionPoints = function(bool) {
-        showGazeDot = bool;
-        gazeDot.style.left = '-5px';
-        gazeDot.style.display = bool ? 'block' : 'none';
+    webgazer.showVideo = function(val) {
+        webgazer.params.showVideo = val;
+        if( videoElement) {
+            videoElement.style.display = val ? 'block' : 'none';
+        }
         return webgazer;
     };
+
+    /**
+     * Set whether the face overlay is visible or not.
+     * @param {*} bool 
+     * @return {webgazer} this
+     */
+    webgazer.showFaceOverlay = function(val) {
+        webgazer.params.showFaceOverlay = val;
+        if( faceOverlay ) {
+            faceOverlay.style.display = val ? 'block' : 'none';
+        }
+        return webgazer;
+    };
+
+    /**
+     * Set whether the face feedback box is visible or not.
+     * @param {*} bool 
+     * @return {webgazer} this
+     */
+    webgazer.showFaceFeedbackBox = function(val) {
+        
+        webgazer.params.showFaceFeedbackBox = val;
+        if( faceFeedbackBox ) {
+            faceFeedbackBox.style.display = val ? 'block' : 'none';
+        }
+        return webgazer;
+    };
+
+    /**
+     * Set whether the gaze prediction point(s) are visible or not. Multiple because of a trail of past dots.
+     * @return {webgazer} this
+     */
+    webgazer.showPredictionPoints = function(val) {
+        webgazer.params.showGazeDot = val;
+        if( gazeDot ) {
+            gazeDot.style.display = val ? 'block' : 'none';
+        }
+        return webgazer;
+    };
+
+    /**
+     * Define constraints on the video camera that is used. Useful for non-standard setups.
+     * This can be set before calling webgazer.begin(), but also mid stream.
+     * 
+     * @param {Object} constraints Example constraints object:
+     * { width: { min: 320, ideal: 1280, max: 1920 }, height: { min: 240, ideal: 720, max: 1080 }, facingMode: "user" };
+     * 
+     * Follows definition here:
+     * https://developer.mozilla.org/en-US/docs/Web/API/Media_Streams_API/Constraints
+     * 
+     * Note: The constraints set here are applied to the video track only. They also _replace_ any constraints, so be sure to set everything you need.
+     * Warning: Setting a large video resolution will decrease performance, and may require
+     */
+    webgazer.setCameraConstraints = function(constraints) {
+        webgazer.params.camConstraints = constraints;
+
+        // If the camera stream is already up...
+        if(videoStream)
+        {
+            webgazer.pause();
+            videoTrack = videoStream.getVideoTracks()[0];
+            videoTrack.applyConstraints( webgazer.params.camConstraints ).then(function() {
+                
+                // Now get what was actually set, and update the internal buffer values
+                videoSettings = videoTrack.getSettings();
+                setInternalVideoBufferSizes( videoSettings.width, videoSettings.height );
+
+            }).catch(function(err) { // error handling
+                console.log( err );
+            }).finally(function() {
+                // Reset and recompute sizes of the video viewer. 
+                // This is only to adjust the feedback box, say, if the aspect ratio of the video has changed.
+                webgazer.setVideoViewerSize( webgazer.params.videoViewerWidth, webgazer.params.videoViewerHeight )
+                webgazer.getTracker().reset();
+                webgazer.resume();
+            });
+        }
+    }
+
+    /**
+     * Does what it says on the tin.
+     * @param {*} width 
+     * @param {*} height 
+     */
+    function setInternalVideoBufferSizes( width, height ) {
+        // Re-set the canvas size used by the internal processes
+        if( videoElementCanvas )
+        {
+            videoElementCanvas.width = width;
+            videoElementCanvas.height = height;
+        }
+
+        // Re-set the face overlay canvas size
+        if( faceOverlay )
+        {
+            faceOverlay.width = width;
+            faceOverlay.height = height;
+        }
+    }
 
     /**
      *  Set a static video file to be used instead of webcam video
@@ -10835,6 +11239,31 @@ var mosseFilterResponses = function() {
     webgazer.setStaticVideo = function(videoLoc) {
        debugVideoLoc = videoLoc;
        return webgazer;
+    };
+
+    /**
+     * Set the size of the video viewer
+     */
+    webgazer.setVideoViewerSize = function(w, h) {
+        webgazer.params.videoViewerWidth = w;
+        webgazer.params.videoViewerHeight = h;
+
+        // Change the video viewer
+        videoElement.style.width = w + 'px';
+        videoElement.style.height = h + 'px';
+        
+        // Change the face overlay
+        faceOverlay.style.width = w + 'px';
+        faceOverlay.style.height = h + 'px';
+
+        // Change the feedback box size
+        // Compute the boundaries of the face overlay validation box based on the video size
+        var tlwh = webgazer.computeValidationBoxSize()
+        // Assign them to the object
+        faceFeedbackBox.style.top = tlwh[0] + 'px';
+        faceFeedbackBox.style.left = tlwh[1] + 'px';
+        faceFeedbackBox.style.width = tlwh[2] + 'px';
+        faceFeedbackBox.style.height = tlwh[3] + 'px';
     };
 
     /**
@@ -10867,7 +11296,19 @@ var mosseFilterResponses = function() {
         return webgazer;
     };
 
-    
+    /**
+     *  Records current screen position for current pupil features.
+     *  @param {String} x - position on screen in the x axis
+     *  @param {String} y - position on screen in the y axis
+     *  @param {String} eventType - "click" or "move", as per eventTypes
+     *  @return {webgazer} this
+     */
+    webgazer.recordScreenPosition = function(x, y, eventType) {
+        // give this the same weight that a click gets.
+        recordScreenPosition(x, y, eventType);
+        return webgazer;
+    };
+
     //SETTERS
     /**
      * Sets the tracking module
@@ -10875,7 +11316,7 @@ var mosseFilterResponses = function() {
      * @return {webgazer} this
      */
     webgazer.setTracker = function(name) {
-        if (curTrackerMap[name] == undefined) {
+        if (curTrackerMap[name] === undefined) {
             console.log('Invalid tracker selection');
             console.log('Options are: ');
             for (var t in curTrackerMap) {
@@ -10893,7 +11334,7 @@ var mosseFilterResponses = function() {
      * @return {webgazer} this
      */
     webgazer.setRegression = function(name) {
-        if (regressionMap[name] == undefined) {
+        if (regressionMap[name] === undefined) {
             console.log('Invalid regression selection');
             console.log('Options are: ');
             for (var reg in regressionMap) {
@@ -10929,10 +11370,10 @@ var mosseFilterResponses = function() {
             return new constructor();
         };
     };
-    
+
     /**
      * Adds a new regression module to the list of regression modules, seeding its data from the first regression module
-     * @param {string} name - the string name of the regression module to add
+     * @param {String} name - the string name of the regression module to add
      * @return {webgazer} this
      */
     webgazer.addRegression = function(name) {
@@ -10962,7 +11403,7 @@ var mosseFilterResponses = function() {
         return webgazer;
     };
 
-    
+
     //GETTERS
     /**
      * Returns the tracker currently in use
@@ -10995,5 +11436,25 @@ var mosseFilterResponses = function() {
     webgazer.params.getEventTypes = function() {
         return eventTypes.slice();
     }
-    
+
+    /**
+     * Get the video element canvas that WebGazer uses internally on which to run its face tracker.
+     * @return The current video element canvas
+     */
+    webgazer.getVideoElementCanvas = function() {
+        return videoElementCanvas;
+    }
+  
+    /**
+     * Set the video element canvas; useful if you want to run WebGazer on your own canvas (e.g., on any random image).
+     * @return The current video element canvas
+     */
+    webgazer.setVideoElementCanvas = function(canvas) {
+        videoElementCanvas = canvas;
+    }
+
+    webgazer.getVideoPreviewToCameraResolutionRatio = function() {
+        return [webgazer.params.videoViewerWidth / videoElement.videoWidth, webgazer.params.videoViewerHeight / videoElement.videoHeight];
+    }
+
 }(window));
